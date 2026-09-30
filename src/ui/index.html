@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRUSTTRACE CV – Computer Vision Assurance System</title>
+  <meta name="description" content="TRUSTTRACE CV is an offline-first, model-agnostic assurance system for computer vision training data, model artifacts, and inference records. SIH26228." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- =========================================================
+  HEADER
+========================================================= -->
+<header class="header" role="banner">
+  <div class="header-inner container">
+    <div class="logo-group">
+      <div class="logo-mark" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#1A56DB"/>
+          <path d="M8 16L13 21L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="16" cy="16" r="11" stroke="white" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.4"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">TRUSTTRACE CV</div>
+        <div class="logo-sub">SIH26228 — Computer Vision Assurance System</div>
+      </div>
+    </div>
+    <nav class="header-nav" aria-label="Main navigation">
+      <button class="nav-btn active" data-panel="dataset" id="nav-dataset">Dataset</button>
+      <button class="nav-btn" data-panel="model" id="nav-model">Model</button>
+      <button class="nav-btn" data-panel="inference" id="nav-inference">Inference</button>
+      <button class="nav-btn" data-panel="report" id="nav-report">Report</button>
+      <button class="nav-btn" data-panel="coverage" id="nav-coverage">Coverage</button>
+    </nav>
+    <div class="header-status" id="api-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Connecting...</span>
+    </div>
+  </div>
+</header>
+
+<main class="main container" role="main">
+
+<!-- =========================================================
+  PANEL: DATASET INSPECTION
+========================================================= -->
+<section class="panel active" id="panel-dataset" aria-label="Dataset Inspection">
+  <div class="panel-header">
+    <h1 class="panel-title">Dataset Inspection</h1>
+    <p class="panel-desc">Inspect YOLO or COCO format datasets for integrity anomalies, duplicate flooding, label flipping, trigger patterns, and out-of-distribution samples.</p>
+  </div>
+
+  <div class="form-card">
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label" for="ds-path">Dataset root path</label>
+        <input class="field-input" type="text" id="ds-path" placeholder="data/fixtures/clean" value="data/fixtures/clean" />
+      </div>
+      <div class="field-group field-sm">
+        <label class="field-label" for="ds-format">Format</label>
+        <select class="field-select" id="ds-format">
+          <option value="yolo" selected>YOLO</option>
+          <option value="coco">COCO</option>
+        </select>
+      </div>
+      <div class="field-group field-sm">
+        <label class="field-label" for="ds-seed">Seed</label>
+        <input class="field-input" type="number" id="ds-seed" value="42" min="0" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-audit-dataset">Run Dataset Audit</button>
+    </div>
+  </div>
+
+  <div id="ds-results" class="results-area" hidden>
+    <div class="results-header">
+      <div class="verdict-badge" id="ds-verdict-badge"></div>
+      <div class="severity-chips" id="ds-severity-chips"></div>
+    </div>
+
+    <!-- Findings table -->
+    <div class="section-label">Security Findings</div>
+    <div class="table-wrapper">
+      <table class="findings-table" id="ds-findings-table">
+        <thead>
+          <tr>
+            <th>Check ID</th><th>Name</th><th>Result</th><th>Severity</th><th>Confidence</th><th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="ds-findings-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Image records -->
+    <div class="section-label" style="margin-top:24px">Dataset Images (first 20)</div>
+    <div class="image-grid" id="ds-image-grid"></div>
+  </div>
+
+  <div id="ds-spinner" class="spinner-area" hidden>
+    <div class="spinner"></div><span>Running audit...</span>
+  </div>
+  <div id="ds-error" class="error-banner" hidden></div>
+</section>
+
+<!-- =========================================================
+  PANEL: MODEL INTEGRITY
+========================================================= -->
+<section class="panel" id="panel-model" aria-label="Model Integrity" hidden>
+  <div class="panel-header">
+    <h1 class="panel-title">Model Identity and Integrity</h1>
+    <p class="panel-desc">Verify model artifact hashes against a reference manifest, validate format and structure, and detect substitution or corruption.</p>
+  </div>
+
+  <div class="form-card">
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label" for="mdl-path">Model artifact path (.pt / .onnx)</label>
+        <input class="field-input" type="text" id="mdl-path" placeholder="models/fixtures/dummy_detector.pt" value="models/fixtures/dummy_detector.pt" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="mdl-manifest">Manifest path (optional)</label>
+        <input class="field-input" type="text" id="mdl-manifest" placeholder="models/fixtures/manifest.json" value="models/fixtures/manifest.json" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-audit-model">Run Model Audit</button>
+    </div>
+  </div>
+
+  <div id="mdl-results" class="results-area" hidden>
+    <div class="results-header">
+      <div class="verdict-badge" id="mdl-verdict-badge"></div>
+      <div class="severity-chips" id="mdl-severity-chips"></div>
+    </div>
+    <div class="section-label">Model Metadata</div>
+    <div class="meta-grid" id="mdl-meta-grid"></div>
+    <div class="section-label" style="margin-top:24px">Security Findings</div>
+    <div class="table-wrapper">
+      <table class="findings-table">
+        <thead>
+          <tr><th>Check ID</th><th>Name</th><th>Result</th><th>Severity</th><th>Confidence</th><th>Details</th></tr>
+        </thead>
+        <tbody id="mdl-findings-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="mdl-spinner" class="spinner-area" hidden><div class="spinner"></div><span>Running audit...</span></div>
+  <div id="mdl-error" class="error-banner" hidden></div>
+</section>
+
+<!-- =========================================================
+  PANEL: INFERENCE VERIFICATION
+========================================================= -->
+<section class="panel" id="panel-inference" aria-label="Inference Verification" hidden>
+  <div class="panel-header">
+    <h1 class="panel-title">Inference Record Verification</h1>
+    <p class="panel-desc">Verify inference log integrity via HMAC-SHA256 signatures, detect replay attacks, and flag backdoor-like behaviour indicators.</p>
+  </div>
+
+  <div class="form-card">
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label" for="inf-log">Inference log path (.jsonl)</label>
+        <input class="field-input" type="text" id="inf-log" placeholder="data/fixtures/inference_logs/inference_log.jsonl" value="data/fixtures/inference_logs/inference_log.jsonl" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-audit-inference">Run Inference Audit</button>
+    </div>
+  </div>
+
+  <div id="inf-results" class="results-area" hidden>
+    <div class="results-header">
+      <div class="verdict-badge" id="inf-verdict-badge"></div>
+      <div class="severity-chips" id="inf-severity-chips"></div>
+    </div>
+    <div class="section-label">Inference Records</div>
+    <div class="table-wrapper">
+      <table class="findings-table" id="inf-records-table">
+        <thead>
+          <tr><th>Record ID</th><th>Image</th><th>Model</th><th>Predictions</th><th>Hash Status</th><th>HMAC</th></tr>
+        </thead>
+        <tbody id="inf-records-body"></tbody>
+      </table>
+    </div>
+    <div class="section-label" style="margin-top:24px">Security Findings</div>
+    <div class="table-wrapper">
+      <table class="findings-table">
+        <thead>
+          <tr><th>Check ID</th><th>Name</th><th>Result</th><th>Severity</th><th>Confidence</th><th>Details</th></tr>
+        </thead>
+        <tbody id="inf-findings-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="inf-spinner" class="spinner-area" hidden><div class="spinner"></div><span>Running audit...</span></div>
+  <div id="inf-error" class="error-banner" hidden></div>
+</section>
+
+<!-- =========================================================
+  PANEL: ASSURANCE REPORT
+========================================================= -->
+<section class="panel" id="panel-report" aria-label="Assurance Report" hidden>
+  <div class="panel-header">
+    <h1 class="panel-title">Assurance Report</h1>
+    <p class="panel-desc">Run the complete audit pipeline and generate an evidence-backed assurance report with confidence basis, limitations, and recommended actions.</p>
+  </div>
+
+  <div class="form-card">
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label" for="rep-ds">Dataset path (optional)</label>
+        <input class="field-input" type="text" id="rep-ds" value="data/fixtures/clean" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="rep-mdl">Model path (optional)</label>
+        <input class="field-input" type="text" id="rep-mdl" value="models/fixtures/dummy_detector.pt" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label" for="rep-manifest">Manifest path (optional)</label>
+        <input class="field-input" type="text" id="rep-manifest" value="models/fixtures/manifest.json" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="rep-inf">Inference log (optional)</label>
+        <input class="field-input" type="text" id="rep-inf" value="data/fixtures/inference_logs/inference_log.jsonl" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-full-audit">Generate Full Assurance Report</button>
+    </div>
+  </div>
+
+  <div id="rep-results" class="results-area" hidden>
+    <div class="report-summary-card" id="rep-summary-card"></div>
+    <div class="section-label" style="margin-top:24px">All Findings</div>
+    <div class="table-wrapper">
+      <table class="findings-table">
+        <thead>
+          <tr><th>Check ID</th><th>Name</th><th>Result</th><th>Severity</th><th>Confidence</th><th>Description</th></tr>
+        </thead>
+        <tbody id="rep-findings-body"></tbody>
+      </table>
+    </div>
+    <div class="section-label" style="margin-top:24px">Confidence Basis</div>
+    <div class="prose-block" id="rep-confidence"></div>
+    <div class="section-label" style="margin-top:24px">Recommended Actions</div>
+    <ul class="action-list" id="rep-actions"></ul>
+    <div class="section-label" style="margin-top:24px">Limitations</div>
+    <ul class="limitation-list" id="rep-limitations"></ul>
+  </div>
+
+  <div id="rep-spinner" class="spinner-area" hidden><div class="spinner"></div><span>Generating report...</span></div>
+  <div id="rep-error" class="error-banner" hidden></div>
+</section>
+
+<!-- =========================================================
+  PANEL: COVERAGE
+========================================================= -->
+<section class="panel" id="panel-coverage" aria-label="Coverage and Limitations" hidden>
+  <div class="panel-header">
+    <h1 class="panel-title">Coverage and Limitations</h1>
+    <p class="panel-desc">A complete statement of implemented features, partial support, unsupported scenarios, assumptions, and known limitations.</p>
+  </div>
+  <div id="coverage-content" class="coverage-grid">
+    <div class="spinner-area"><div class="spinner"></div><span>Loading coverage...</span></div>
+  </div>
+</section>
+
+</main>
+
+<!-- Detail modal -->
+<div class="modal-backdrop" id="modal-backdrop" hidden aria-modal="true" role="dialog">
+  <div class="modal-box">
+    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+    <div class="modal-title" id="modal-title"></div>
+    <pre class="modal-body" id="modal-body"></pre>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

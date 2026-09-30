@@ -1,0 +1,16 @@
+# TrustTrace CV – Requirements
+# Python 3.12
+# Pinned on 2026-10-01
+
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.0
+
+# ML / Inference
+onnxruntime==1.20.1
+
+# Core already in mldl: torch, torchvision, numpy, pillow, scipy, scikit-learn, matplotlib, pandas, rich, PyYAML, click, tqdm
+
+# Testing
+pytest==8.3.3
+pytest-cov==5.0.0
