@@ -35,8 +35,13 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_SECRET = b"TRUSTTRACE_CV_DEFAULT_HMAC_SECRET"  # override in production
-
+import os
+_ENV_SECRET = os.environ.get("TRUSTTRACE_CV_HMAC_SECRET")
+if _ENV_SECRET:
+    _DEFAULT_SECRET = _ENV_SECRET.encode("utf-8")
+else:
+    logger.warning("INSECURE DEVELOPMENT FALLBACK: Using hardcoded HMAC secret.")
+    _DEFAULT_SECRET = b"TRUSTTRACE_CV_DEFAULT_HMAC_SECRET"
 
 # ---------------------------------------------------------------------------
 # Record & sign an inference result

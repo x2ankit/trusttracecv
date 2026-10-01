@@ -133,6 +133,124 @@ function showError(prefix, msg) {
 }
 
 // =========================================================
+// Dataset Upload
+// =========================================================
+document.getElementById('ds-upload').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('format', document.getElementById('ds-format').value);
+  
+  const status = document.getElementById('ds-upload-status');
+  status.textContent = 'Uploading...';
+  
+  try {
+    const r = await fetch(`${API_BASE}/api/upload/dataset`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!r.ok) { const err = await r.json(); throw new Error(err.detail || r.statusText); }
+    const data = await r.json();
+    document.getElementById('ds-path').value = data.dataset_path;
+    status.textContent = 'Uploaded successfully!';
+    setTimeout(() => status.textContent = '', 3000);
+  } catch (err) {
+    status.textContent = `Upload failed: ${err.message}`;
+  }
+});
+
+// =========================================================
+// Image Grid Helper
+// =========================================================
+function renderImageGrid(gridId, datasetRecords, inferenceRecords, format) {
+  const grid = document.getElementById(gridId);
+  const records = (datasetRecords || []).slice(0, 20);
+  if (records.length === 0) {
+    grid.innerHTML = `<div style="color:var(--gray-400);font-size:13px">No image records returned.</div>`;
+    return;
+  }
+  
+  // Map inference records by image filename (naive match for simplicity)
+  const infMap = {};
+  if (inferenceRecords) {
+    inferenceRecords.forEach(ir => {
+      infMap[ir.image_id] = ir;
+      // also try matching with extensions
+      infMap[ir.image_id + '.jpg'] = ir;
+      infMap[ir.image_id + '.png'] = ir;
+    });
+  }
+
+  grid.innerHTML = records.map(rec => {
+    const ok   = rec.checks?.file_exists?.result === 'PASS';
+    const warn = rec.checks?.non_blank?.result === 'WARN';
+    const anns = (rec.annotations || []).filter(a => a.class_id !== undefined || a.bbox !== undefined);
+    
+    // Find matching inference record
+    const baseName = rec.filename.split('.')[0];
+    const infRec = infMap[rec.filename] || infMap[baseName];
+    const preds = infRec ? (infRec.predictions || []) : [];
+    
+    let boxesHtml = '';
+    if (ok && rec.url_path && rec.resolution) {
+      const [imgW, imgH] = rec.resolution;
+      
+      // Draw Ground Truth (Green)
+      boxesHtml += anns.map(a => {
+        let left, top, width, height;
+        if (format === 'yolo') {
+          left = (a.x_center - a.width/2) * 100; top = (a.y_center - a.height/2) * 100;
+          width = a.width * 100; height = a.height * 100;
+        } else {
+          const [x, y, w, h] = a.bbox;
+          left = (x / imgW) * 100; top = (y / imgH) * 100;
+          width = (w / imgW) * 100; height = (h / imgH) * 100;
+        }
+        return `<div class="bbox" style="left:${left}%; top:${top}%; width:${width}%; height:${height}%; border: 2px solid #10b981; position: absolute; box-sizing: border-box;">
+                  <span style="background: #10b981; color: white; font-size: 10px; position: absolute; top: -14px; left: -2px; padding: 0 4px; white-space: nowrap;">GT: ${a.class_name || 'cls ' + a.class_id}</span>
+                </div>`;
+      }).join('');
+      
+      // Draw Predictions (Purple)
+      boxesHtml += preds.map(p => {
+        if (!p.bbox) return '';
+        const [x, y, w, h] = p.bbox;
+        // inference bbox is typically absolute pixels [x_min, y_min, w, h] or normalized? 
+        // Our fixture has [10, 10, 40, 40] which looks like pixels. Let's assume absolute.
+        const left = (x / imgW) * 100; const top = (y / imgH) * 100;
+        const width = (w / imgW) * 100; const height = (h / imgH) * 100;
+        return `<div class="bbox" style="left:${left}%; top:${top}%; width:${width}%; height:${height}%; border: 2px dashed #8b5cf6; position: absolute; box-sizing: border-box;">
+                  <span style="background: #8b5cf6; color: white; font-size: 10px; position: absolute; bottom: -14px; left: -2px; padding: 0 4px; white-space: nowrap;">Pred: cls ${p.class_id} (${p.score})</span>
+                </div>`;
+      }).join('');
+    }
+
+    const imgContainer = ok && rec.url_path ? 
+      `<div style="position:relative; width:100%; aspect-ratio: 1; background:#000; overflow:hidden;">
+         <img src="${API_BASE}/api/image?path=${encodeURIComponent(rec.url_path)}" style="width:100%; height:100%; object-fit:contain;" />
+         ${boxesHtml}
+       </div>` : 
+      `<div class="image-placeholder" aria-hidden="true">${ok ? '🖼' : '✕'}</div>`;
+
+    return `
+      <div class="image-card">
+        ${imgContainer}
+        <div class="image-info">
+          <div class="image-name" title="${rec.filename}">${rec.filename}</div>
+          <div class="image-meta">${rec.resolution ? rec.resolution.join('×') : '—'}</div>
+          ${warn ? '<div class="image-check-err">Blank image</div>' : ''}
+          ${!ok  ? '<div class="image-check-err">File missing</div>' : ''}
+          <div class="image-anns">
+            ${anns.slice(0,2).map(a => `<span class="ann-chip">${a.class_name || 'cls ' + a.class_id}</span>`).join('')}
+            ${preds.length > 0 ? `<span class="ann-chip" style="background:#ede9fe; color:#6d28d9">Preds: ${preds.length}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// =========================================================
 // Dataset Audit
 // =========================================================
 document.getElementById('btn-audit-dataset').addEventListener('click', async () => {
@@ -165,30 +283,7 @@ document.getElementById('btn-audit-dataset').addEventListener('click', async () 
     renderFindingsTable('ds-findings-body', data.findings || []);
 
     // Image grid
-    const grid = document.getElementById('ds-image-grid');
-    const records = (data.records || []).slice(0, 20);
-    if (records.length === 0) {
-      grid.innerHTML = `<div style="color:var(--gray-400);font-size:13px">No image records returned.</div>`;
-    } else {
-      grid.innerHTML = records.map(rec => {
-        const ok   = rec.checks?.file_exists?.result === 'PASS';
-        const warn = rec.checks?.non_blank?.result === 'WARN';
-        const anns = (rec.annotations || []).filter(a => a.class_id !== undefined);
-        return `
-          <div class="image-card">
-            <div class="image-placeholder" aria-hidden="true">${ok ? '🖼' : '✕'}</div>
-            <div class="image-info">
-              <div class="image-name" title="${rec.filename}">${rec.filename}</div>
-              <div class="image-meta">${rec.resolution || '—'}</div>
-              ${warn ? '<div class="image-check-err">Blank image</div>' : ''}
-              ${!ok  ? '<div class="image-check-err">File missing</div>' : ''}
-              <div class="image-anns">
-                ${anns.slice(0,4).map(a => `<span class="ann-chip">cls ${a.class_id}</span>`).join('')}
-              </div>
-            </div>
-          </div>`;
-      }).join('');
-    }
+    renderImageGrid('ds-image-grid', data.records, null, format);
 
     document.getElementById('ds-results').hidden = false;
   } catch (err) {
@@ -363,6 +458,11 @@ document.getElementById('btn-full-audit').addEventListener('click', async () => 
     const coverage = data.coverage || {};
     const limList = document.getElementById('rep-limitations');
     limList.innerHTML = (coverage.known_limitations||[]).map(l => `<li>${l}</li>`).join('');
+
+    // Image grid with dataset and inference records
+    // Assume format is YOLO unless we added logic to know. For Full Audit, it defaults to YOLO but could be COCO.
+    // Let's pass 'yolo' or check if there's an annotations.json in dataset_path in the future.
+    renderImageGrid('rep-image-grid', data.dataset_records, data.inference_records, 'yolo');
 
     document.getElementById('rep-results').hidden = false;
   } catch (err) {

@@ -58,8 +58,8 @@
   <div class="form-card">
     <div class="form-row">
       <div class="field-group">
-        <label class="field-label" for="ds-path">Dataset root path</label>
-        <input class="field-input" type="text" id="ds-path" placeholder="data/fixtures/clean" value="data/fixtures/clean" />
+        <label class="field-label" for="ds-path">Dataset root path (or upload .zip below)</label>
+        <input class="field-input" type="text" id="ds-path" placeholder="Path to dataset" value="" />
       </div>
       <div class="field-group field-sm">
         <label class="field-label" for="ds-format">Format</label>
@@ -73,8 +73,15 @@
         <input class="field-input" type="number" id="ds-seed" value="42" min="0" />
       </div>
     </div>
-    <div class="form-actions">
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label" for="ds-upload">Upload Dataset (ZIP)</label>
+        <input class="field-input" type="file" id="ds-upload" accept=".zip" />
+      </div>
+    </div>
+    <div class="form-actions" style="display:flex; gap:12px; align-items:center;">
       <button class="btn btn-primary" id="btn-audit-dataset">Run Dataset Audit</button>
+      <span id="ds-upload-status" style="font-size:13px; color:var(--gray-500);"></span>
     </div>
   </div>
 
@@ -121,11 +128,11 @@
     <div class="form-row">
       <div class="field-group">
         <label class="field-label" for="mdl-path">Model artifact path (.pt / .onnx)</label>
-        <input class="field-input" type="text" id="mdl-path" placeholder="models/fixtures/dummy_detector.pt" value="models/fixtures/dummy_detector.pt" />
+        <input class="field-input" type="text" id="mdl-path" placeholder="Path to model artifact" value="" />
       </div>
       <div class="field-group">
         <label class="field-label" for="mdl-manifest">Manifest path (optional)</label>
-        <input class="field-input" type="text" id="mdl-manifest" placeholder="models/fixtures/manifest.json" value="models/fixtures/manifest.json" />
+        <input class="field-input" type="text" id="mdl-manifest" placeholder="Path to manifest.json" value="" />
       </div>
     </div>
     <div class="form-actions">
@@ -168,7 +175,7 @@
     <div class="form-row">
       <div class="field-group">
         <label class="field-label" for="inf-log">Inference log path (.jsonl)</label>
-        <input class="field-input" type="text" id="inf-log" placeholder="data/fixtures/inference_logs/inference_log.jsonl" value="data/fixtures/inference_logs/inference_log.jsonl" />
+        <input class="field-input" type="text" id="inf-log" placeholder="Path to inference log" value="" />
       </div>
     </div>
     <div class="form-actions">
@@ -218,21 +225,21 @@
     <div class="form-row">
       <div class="field-group">
         <label class="field-label" for="rep-ds">Dataset path (optional)</label>
-        <input class="field-input" type="text" id="rep-ds" value="data/fixtures/clean" />
+        <input class="field-input" type="text" id="rep-ds" placeholder="Path to dataset" value="" />
       </div>
       <div class="field-group">
         <label class="field-label" for="rep-mdl">Model path (optional)</label>
-        <input class="field-input" type="text" id="rep-mdl" value="models/fixtures/dummy_detector.pt" />
+        <input class="field-input" type="text" id="rep-mdl" placeholder="Path to model" value="" />
       </div>
     </div>
     <div class="form-row">
       <div class="field-group">
         <label class="field-label" for="rep-manifest">Manifest path (optional)</label>
-        <input class="field-input" type="text" id="rep-manifest" value="models/fixtures/manifest.json" />
+        <input class="field-input" type="text" id="rep-manifest" placeholder="Path to manifest.json" value="" />
       </div>
       <div class="field-group">
         <label class="field-label" for="rep-inf">Inference log (optional)</label>
-        <input class="field-input" type="text" id="rep-inf" value="data/fixtures/inference_logs/inference_log.jsonl" />
+        <input class="field-input" type="text" id="rep-inf" placeholder="Path to inference log" value="" />
       </div>
     </div>
     <div class="form-actions">
@@ -257,6 +264,8 @@
     <ul class="action-list" id="rep-actions"></ul>
     <div class="section-label" style="margin-top:24px">Limitations</div>
     <ul class="limitation-list" id="rep-limitations"></ul>
+    <div class="section-label" style="margin-top:24px">Sample Images with Predictions</div>
+    <div class="image-grid" id="rep-image-grid"></div>
   </div>
 
   <div id="rep-spinner" class="spinner-area" hidden><div class="spinner"></div><span>Generating report...</span></div>

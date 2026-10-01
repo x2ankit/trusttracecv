@@ -76,7 +76,10 @@ class TestManifest:
         manifest_path = tmp_path / "manifest.json"
         save_manifest(manifest, manifest_path)
         loaded = load_manifest(manifest_path)
-        assert loaded == manifest
+        assert "hmac_sig" in loaded
+        from src.models.integrity import verify_manifest
+        assert verify_manifest(loaded) is True
+        assert loaded["m.bin"] == manifest["m.bin"]
 
     def test_missing_file_excluded(self, tmp_path):
         real = tmp_path / "real.bin"; real.write_bytes(b"x")
