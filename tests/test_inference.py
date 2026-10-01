@@ -94,21 +94,31 @@ class TestVerifyInferenceRecord:
 # ---------------------------------------------------------------------------
 
 class TestReplayDetection:
+    @pytest.fixture(autouse=True)
+    def setup_db(self, tmp_path):
+        db_path = tmp_path / "test_prov.db"
+        os.environ["TRUSTTRACE_PROVENANCE_DB"] = str(db_path)
+        yield
+        if "TRUSTTRACE_PROVENANCE_DB" in os.environ:
+            del os.environ["TRUSTTRACE_PROVENANCE_DB"]
+
     def test_first_record_no_replay(self):
         rec = record_inference("img1", "mdl", [], secret=_SECRET)
-        finding = check_inference_replay(rec, seen_hashes=set())
+        finding = check_inference_replay(rec)
         assert finding["result"] == "PASS"
 
     def test_second_occurrence_is_replay(self):
         rec = record_inference("img1", "mdl", [], secret=_SECRET)
-        seen = {rec["payload_hash"]}
-        finding = check_inference_replay(rec, seen_hashes=seen)
+        # Call once to insert
+        check_inference_replay(rec)
+        # Call again with identical record
+        finding = check_inference_replay(rec)
         assert finding["result"] == "ANOMALY_DETECTED"
         assert finding["severity"] == "HIGH"
 
     def test_check_id(self):
         rec = record_inference("img1", "mdl", [], secret=_SECRET)
-        finding = check_inference_replay(rec, seen_hashes=set())
+        finding = check_inference_replay(rec)
         assert finding["check_id"] == "SEC-INF-002"
 
 
