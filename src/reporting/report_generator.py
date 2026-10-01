@@ -216,3 +216,69 @@ def save_report(report: Dict[str, Any], output_path: Path) -> None:
 def load_report(report_path: Path) -> Dict[str, Any]:
     with open(report_path, "r", encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def generate_report_from_evidence(
+    correlator_summary: Dict[str, Any],
+    dataset_summary: Optional[Dict[str, Any]] = None,
+    model_summary: Optional[Dict[str, Any]] = None,
+    audit_seed: int = 42,
+    target_name: str = "Full Assurance Audit"
+) -> Dict[str, Any]:
+    """
+    Generate a report directly from an EvidenceCorrelator's summary.
+    """
+    import platform
+    import sys
+    
+    findings = correlator_summary.get("findings", [])
+    
+    # Determine verdict based on Evidence severities
+    severities = correlator_summary.get("severity_counts", {})
+    if severities.get("CRITICAL", 0) > 0:
+        verdict = "FAIL"
+    elif severities.get("HIGH", 0) > 0 or severities.get("MEDIUM", 0) > 0:
+        verdict = "ANOMALIES_DETECTED"
+    elif len(findings) == 0:
+        verdict = "INCONCLUSIVE"
+    else:
+        verdict = "PASS"
+
+    report = {
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "report_id": str(uuid.uuid4()),
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "target_name": target_name,
+        "audit_seed": audit_seed,
+        "system_info": {
+            "platform": platform.platform(),
+            "python_version": sys.version,
+            "hostname": platform.node(),
+        },
+        "verdict": verdict,
+        "severity_summary": severities,
+        "findings_count": correlator_summary.get("total_findings", 0),
+        "sections": {
+            "dataset": {
+                "summary": dataset_summary or {},
+            },
+            "models": {
+                "summary": model_summary or {},
+            },
+            "evidence": findings
+        },
+        "coverage": COVERAGE,
+        "confidence_basis": (
+            "Deterministic checks carry HIGH confidence. Statistical checks "
+            "carry LOW to MEDIUM confidence and require human review. "
+            "Evidence objects are correlated across DATASET, MODEL, INFERENCE, and SHIFT layers."
+        ),
+        "limitations_summary": COVERAGE["known_limitations"],
+        "recommended_actions": [
+            f.get("recommended_action", "")
+            for f in findings
+            if f.get("status") in ("FLAGGED", "FAIL") and f.get("recommended_action")
+        ],
+    }
+    return report
+
