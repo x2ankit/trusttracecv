@@ -304,24 +304,6 @@ def audit_model(req: ModelAuditRequest):
 # ---------------------------------------------------------------------------
 # Inference audit
 # ---------------------------------------------------------------------------
-PERSISTENT_HASHES_FILE = ROOT / "data" / "seen_hashes.json"
-
-def get_seen_hashes() -> set:
-    if PERSISTENT_HASHES_FILE.exists():
-        try:
-            with open(PERSISTENT_HASHES_FILE, "r") as f:
-                return set(json.load(f))
-        except json.JSONDecodeError:
-            pass
-    return set()
-
-def add_seen_hash(h: str):
-    hashes = get_seen_hashes()
-    hashes.add(h)
-    PERSISTENT_HASHES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(PERSISTENT_HASHES_FILE, "w") as f:
-        json.dump(list(hashes), f)
-
 @app.post("/api/audit/inference")
 def audit_inference(req: InferenceAuditRequest):
     log_path = ROOT / req.log_path
@@ -331,14 +313,9 @@ def audit_inference(req: InferenceAuditRequest):
     records = load_inference_log(log_path)
     findings: List[Dict[str, Any]] = []
 
-    seen_hashes = get_seen_hashes()
-
     for rec in records:
         findings.append(verify_inference_record(rec))
-        findings.append(check_inference_replay(rec, seen_hashes))
-        if rec.get("payload_hash"):
-            seen_hashes.add(rec["payload_hash"])
-            add_seen_hash(rec["payload_hash"])
+        findings.append(check_inference_replay(rec))
         preds = rec.get("predictions", [])
         bb = check_backdoor_behaviour(preds)
         if bb["result"] != "PASS":
@@ -417,13 +394,9 @@ def audit_full(req: FullAuditRequest):
         lp = ROOT / req.inference_log
         if lp.exists():
             records_inf = load_inference_log(lp)
-            seen_hashes = get_seen_hashes()
             for rec in records_inf:
                 all_inf_findings.append(verify_inference_record(rec))
-                all_inf_findings.append(check_inference_replay(rec, seen_hashes))
-                if rec.get("payload_hash"):
-                    seen_hashes.add(rec["payload_hash"])
-                    add_seen_hash(rec["payload_hash"])
+                all_inf_findings.append(check_inference_replay(rec))
 
     report = generate_report(
         dataset_findings=all_ds_findings,

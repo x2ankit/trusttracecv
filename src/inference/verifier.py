@@ -51,26 +51,40 @@ def record_inference(
     image_id: str,
     model_id: str,
     predictions: List[Dict[str, Any]],
+    input_sha256: str = "",
+    image_dimensions: str = "",
+    model_sha256: str = "",
+    verified_manifest_id: str = "",
+    preprocessing_config: Optional[Dict[str, Any]] = None,
+    preprocessing_digest: str = "",
+    inference_config: Optional[Dict[str, Any]] = None,
+    output_digest: str = "",
+    sequence_number: int = 0,
+    previous_event_hash: str = "",
     secret: bytes = _DEFAULT_SECRET,
 ) -> Dict[str, Any]:
     """
     Create a signed inference record.
-
-    Args:
-        image_id:    Identifier for the input image.
-        model_id:    Identifier (or hash) of the model used.
-        predictions: List of prediction dicts e.g. [{class_id, score, bbox}].
-        secret:      HMAC-SHA256 signing key.
-
-    Returns:
-        A record dict with a deterministic 'payload_hash' and 'hmac_sig'.
     """
     record = {
-        "record_id": str(uuid.uuid4()),
+        "event_id": str(uuid.uuid4()),
+        "record_id": str(uuid.uuid4()),  # Keep for backwards compat
         "timestamp": time.time(),
+        "nonce": os.urandom(16).hex(),
         "image_id":  image_id,
+        "input_sha256": input_sha256,
+        "image_dimensions": image_dimensions,
         "model_id":  model_id,
-        "predictions": predictions,
+        "model_sha256": model_sha256,
+        "verified_manifest_id": verified_manifest_id,
+        "preprocessing_config": preprocessing_config or {},
+        "preprocessing_digest": preprocessing_digest,
+        "inference_config": inference_config or {},
+        "prediction_payload": predictions,
+        "predictions": predictions, # Keep for backwards compat
+        "output_digest": output_digest,
+        "sequence_number": sequence_number,
+        "previous_event_hash": previous_event_hash
     }
     payload_bytes = json.dumps(record, sort_keys=True).encode()
     payload_hash  = hashlib.sha256(payload_bytes).hexdigest()
@@ -140,21 +154,15 @@ def verify_inference_record(
 # ---------------------------------------------------------------------------
 
 def check_inference_replay(
-    incoming_record: Dict[str, Any],
-    seen_hashes: set,
+    incoming_record: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
-    Detect if an inference record is a replay of a previously seen result.
-
-    Args:
-        incoming_record: The inference record to check.
-        seen_hashes: Set of previously recorded payload_hash values.
-
-    Returns:
-        Finding dict.
+    Detect if an inference record is a replay of a previously seen result using SQLite persistent store.
     """
-    payload_hash = incoming_record.get("payload_hash")
-    is_replay = payload_hash in seen_hashes if payload_hash else False
+    from src.inference.provenance import record_inference_event
+    
+    success, message, record_hash = record_inference_event(incoming_record)
+    is_replay = (message == "REPLAY_DETECTED")
 
     return {
         "check_id": "SEC-INF-002",
@@ -163,21 +171,21 @@ def check_inference_replay(
         "severity": "HIGH" if is_replay else "INFO",
         "confidence": "HIGH",
         "evidence": {
-            "record_id":    incoming_record.get("record_id"),
-            "payload_hash": payload_hash,
+            "record_id":    incoming_record.get("record_id") or incoming_record.get("event_id"),
+            "payload_hash": incoming_record.get("payload_hash"),
+            "record_hash":  record_hash,
             "is_replay":    is_replay,
         },
         "description": (
             "Replayed inference record detected — hash matches a previously seen result."
-            if is_replay else "No replay detected."
+            if is_replay else "No replay detected. Event recorded in provenance."
         ),
         "recommended_action": (
             "Reject replayed records. Investigate source of duplicate submissions."
             if is_replay else "No action required."
         ),
         "limitation": (
-            "Replay detection is based on payload hash equality. "
-            "An attacker can trivially change a non-critical field to alter the hash."
+            "Replay detection is based on payload equality via record_hash."
         ),
     }
 
