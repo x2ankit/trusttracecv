@@ -1,301 +1,416 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TRUSTTRACE CV – Computer Vision Assurance System</title>
-  <meta name="description" content="TRUSTTRACE CV is an offline-first, model-agnostic assurance system for computer vision training data, model artifacts, and inference records. SIH26228." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRUSTTRACE CV – Computer Vision Integrity Assurance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- =========================================================
-  HEADER
-========================================================= -->
-<header class="header" role="banner">
-  <div class="header-inner container">
-    <div class="logo-group">
-      <div class="logo-mark" aria-hidden="true">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <rect width="32" height="32" rx="8" fill="#1A56DB"/>
-          <path d="M8 16L13 21L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="16" cy="16" r="11" stroke="white" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.4"/>
-        </svg>
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
       </div>
       <div>
-        <div class="logo-name">TRUSTTRACE CV</div>
-        <div class="logo-sub">SIH26228 — Computer Vision Assurance System</div>
+        <div class="brand-name">TRUSTTRACE CV</div>
+        <div class="brand-sub">Assurance Workbench</div>
       </div>
     </div>
-    <nav class="header-nav" aria-label="Main navigation">
-      <button class="nav-btn active" data-panel="dataset" id="nav-dataset">Dataset</button>
-      <button class="nav-btn" data-panel="model" id="nav-model">Model</button>
-      <button class="nav-btn" data-panel="inference" id="nav-inference">Inference</button>
-      <button class="nav-btn" data-panel="report" id="nav-report">Report</button>
-      <button class="nav-btn" data-panel="coverage" id="nav-coverage">Coverage</button>
+    
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-target="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Overview
+      </button>
+      <button class="nav-item" data-target="dataset">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        Dataset Audit
+      </button>
+      <button class="nav-item" data-target="model">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+        Model Integrity
+      </button>
+      <button class="nav-item" data-target="inference">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"></path></svg>
+        Inference Provenance
+      </button>
+      <button class="nav-item" data-target="report">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        Evidence Report
+      </button>
+      <button class="nav-item" data-target="coverage">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        Coverage
+      </button>
     </nav>
-    <div class="header-status" id="api-status">
-      <span class="status-dot" id="status-dot"></span>
-      <span id="status-text">Connecting...</span>
-    </div>
-  </div>
-</header>
-
-<main class="main container" role="main">
-
-<!-- =========================================================
-  PANEL: DATASET INSPECTION
-========================================================= -->
-<section class="panel active" id="panel-dataset" aria-label="Dataset Inspection">
-  <div class="panel-header">
-    <h1 class="panel-title">Dataset Inspection</h1>
-    <p class="panel-desc">Inspect YOLO or COCO format datasets for integrity anomalies, duplicate flooding, label flipping, trigger patterns, and out-of-distribution samples.</p>
-  </div>
-
-  <div class="form-card">
-    <div class="form-row">
-      <div class="field-group">
-        <label class="field-label" for="ds-path">Dataset root path (or upload .zip below)</label>
-        <input class="field-input" type="text" id="ds-path" placeholder="Path to dataset" value="" />
+    
+    <div class="sidebar-footer">
+      <div class="status-item">
+        <span class="status-dot" id="backend-status-dot"></span>
+        <span id="backend-status-text">Checking backend...</span>
       </div>
-      <div class="field-group field-sm">
-        <label class="field-label" for="ds-format">Format</label>
-        <select class="field-select" id="ds-format">
-          <option value="yolo" selected>YOLO</option>
-          <option value="coco">COCO</option>
-        </select>
+      <div class="status-item"><span class="badge gray">Environment: LOCAL</span></div>
+      <div class="status-item"><span class="badge gray">Offline Mode: ACTIVE</span></div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <!-- TOP HEADER -->
+    <header class="topbar">
+      <div class="topbar-info">
+        <span class="topbar-path" id="topbar-path">Workspace: /submission/new</span>
+        <span class="divider">/</span>
+        <span class="topbar-audit" id="topbar-audit-id">Audit: None</span>
+        <span class="divider">/</span>
+        <span class="topbar-ds" id="topbar-ds-name">Dataset: None</span>
+        <span class="topbar-status badge neutral" id="topbar-status">IDLE</span>
       </div>
-      <div class="field-group field-sm">
-        <label class="field-label" for="ds-seed">Seed</label>
-        <input class="field-input" type="number" id="ds-seed" value="42" min="0" />
+      <div class="topbar-actions">
+        <button class="btn btn-outline" id="btn-export-json">Export JSON</button>
       </div>
-    </div>
-    <div class="form-row">
-      <div class="field-group">
-        <label class="field-label" for="ds-upload">Upload Dataset (ZIP)</label>
-        <input class="field-input" type="file" id="ds-upload" accept=".zip" />
-      </div>
-    </div>
-    <div class="form-actions" style="display:flex; gap:12px; align-items:center;">
-      <button class="btn btn-primary" id="btn-audit-dataset">Run Dataset Audit</button>
-      <span id="ds-upload-status" style="font-size:13px; color:var(--gray-500);"></span>
-    </div>
+    </header>
+
+    <main class="page-container">
+      
+      <!-- PAGE: OVERVIEW -->
+      <section id="page-overview" class="page active">
+        <div class="page-header">
+          <h1>TRUSTTRACE CV</h1>
+          <p class="subtitle">Evidence-linked validation of dataset integrity, model artifact identity, inference provenance and distributional consistency.</p>
+        </div>
+        <div class="dashboard-cards" id="overview-cards">
+          <div class="card stat-card">
+            <div class="stat-title">Dataset Samples</div>
+            <div class="stat-value" id="ov-samples">—</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-title">Flagged Samples</div>
+            <div class="stat-value text-red" id="ov-flagged">—</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-title">High Severity</div>
+            <div class="stat-value text-amber" id="ov-high-sev">—</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-title">Model Integrity</div>
+            <div class="stat-value" id="ov-model-status">—</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-title">Inference Integrity</div>
+            <div class="stat-value" id="ov-inf-status">—</div>
+          </div>
+        </div>
+        <div class="empty-state" id="ov-empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          <h3>No Active Audit</h3>
+          <p>Please proceed to Dataset Audit to upload and analyze your data.</p>
+        </div>
+      </section>
+
+      <!-- PAGE: DATASET AUDIT -->
+      <section id="page-dataset" class="page">
+        <div class="page-header">
+          <h1>Dataset Audit</h1>
+          <p class="subtitle">Inspect training/validation data for poisoning, label issues, duplicates, and statistical anomalies.</p>
+        </div>
+
+        <div class="workflow-steps">
+          <div class="step active" id="step-1"><span class="step-num">1</span> Upload Dataset</div>
+          <div class="step-line"></div>
+          <div class="step" id="step-2"><span class="step-num">2</span> Run Audit</div>
+          <div class="step-line"></div>
+          <div class="step" id="step-3"><span class="step-num">3</span> View Results</div>
+        </div>
+
+        <!-- Step 1: Upload -->
+        <div class="card upload-area" id="ds-upload-area">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <h3>Drag & Drop Dataset ZIP</h3>
+          <p class="text-gray">or click to browse local files</p>
+          <input type="file" id="ds-file-input" accept=".zip" hidden>
+          <button class="btn btn-primary mt-4" onclick="document.getElementById('ds-file-input').click()">Browse ZIP</button>
+          
+          <div class="ds-meta mt-4" id="ds-upload-meta" hidden>
+            <div class="flex-row"><span class="meta-label">Filename:</span><span id="ds-meta-filename"></span></div>
+            <div class="flex-row"><span class="meta-label">Path:</span><span id="ds-meta-path"></span></div>
+            <div class="flex-row mt-2">
+              <span class="meta-label">Format:</span>
+              <select id="ds-meta-format" class="input-select">
+                <option value="yolo">YOLO (Auto-detected)</option>
+                <option value="coco">COCO (Override)</option>
+              </select>
+            </div>
+            <button class="btn btn-primary mt-4 w-full" id="btn-start-audit">Run Audit</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Progress -->
+        <div class="card mt-4" id="ds-progress-area" hidden>
+          <h3>Audit Progress</h3>
+          <div class="progress-pipeline">
+            <div class="progress-item completed">Upload <span class="icon">✔</span></div>
+            <div class="progress-item active">Parsing <span class="icon spinner-sm"></span></div>
+            <div class="progress-item pending">Structural Validation <span class="icon">→</span></div>
+            <div class="progress-item pending">Duplicate Analysis <span class="icon">→</span></div>
+            <div class="progress-item pending">Label Consistency <span class="icon">→</span></div>
+            <div class="progress-item pending">Statistical Analysis <span class="icon">→</span></div>
+            <div class="progress-item pending">Quality Checks <span class="icon">→</span></div>
+            <div class="progress-item pending">Report Generation <span class="icon">→</span></div>
+          </div>
+        </div>
+
+        <!-- Step 3: Results -->
+        <div id="ds-results-area" hidden>
+          <div class="two-column-layout mt-4">
+            <!-- Left: Viewer -->
+            <div class="col-left">
+              <div class="card viewer-card">
+                <div class="viewer-header">
+                  <span id="viewer-filename" class="font-mono font-medium">No Image</span>
+                  <div class="viewer-legend">
+                    <span class="legend-item"><span class="legend-color gt"></span> Ground Truth</span>
+                    <span class="legend-item"><span class="legend-color pred"></span> Prediction</span>
+                  </div>
+                </div>
+                <div class="viewer-container" id="bbox-viewer">
+                  <!-- Image and boxes injected here -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right: Details -->
+            <div class="col-right">
+              <div class="card details-card">
+                <h3>Image Details</h3>
+                <div class="details-grid">
+                  <div class="dt-label">Image ID</div><div class="dt-value font-mono" id="dt-id">—</div>
+                  <div class="dt-label">Resolution</div><div class="dt-value" id="dt-res">—</div>
+                  <div class="dt-label">SHA-256</div><div class="dt-value font-mono truncate" id="dt-sha">—</div>
+                  <div class="dt-label">Annotations</div><div class="dt-value" id="dt-ann-count">—</div>
+                </div>
+                
+                <h3 class="mt-4">Detected Objects</h3>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr><th>Type</th><th>Class</th><th>Conf</th><th>Bounding Box</th></tr>
+                    </thead>
+                    <tbody id="dt-objects-tbody">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sample Explorer -->
+          <div class="card mt-4">
+            <div class="explorer-header">
+              <h3>Sample Explorer</h3>
+              <div class="explorer-actions">
+                <input type="text" class="input-text" placeholder="Search filename..." id="search-explorer">
+                <select class="input-select" id="filter-explorer">
+                  <option value="all">All Samples</option>
+                  <option value="flagged">Flagged Only</option>
+                </select>
+              </div>
+            </div>
+            <div class="thumbnail-strip" id="thumbnail-strip">
+              <!-- Thumbnails injected here -->
+            </div>
+          </div>
+
+          <!-- Findings Panel -->
+          <div class="card mt-4">
+            <div class="findings-header">
+              <h3>Security Findings</h3>
+              <div class="findings-summary" id="ds-findings-summary">
+              </div>
+            </div>
+            <div class="table-container mt-4">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Severity</th>
+                    <th>Finding</th>
+                    <th>Affected</th>
+                    <th>Method</th>
+                    <th>Confidence Basis</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ds-findings-tbody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: MODEL INTEGRITY -->
+      <section id="page-model" class="page">
+        <div class="page-header">
+          <h1>Model Integrity & Performance</h1>
+          <p class="subtitle">Validate model artifact cryptography, evaluate performance metrics, and perform behavioral assessments.</p>
+        </div>
+
+        <div class="card form-card">
+          <div class="form-grid">
+            <div>
+              <label>Model Artifact (.pt, .onnx)</label>
+              <input type="text" class="input-text w-full" id="mdl-path" placeholder="/path/to/model.pt">
+            </div>
+            <div>
+              <label>Manifest (Optional)</label>
+              <input type="text" class="input-text w-full" id="mdl-manifest" placeholder="/path/to/manifest.json">
+            </div>
+          </div>
+          <button class="btn btn-primary mt-4" id="btn-audit-model">Verify Model Integrity</button>
+        </div>
+
+        <div id="mdl-results-area" class="mt-4" hidden>
+          <div class="three-column-layout">
+            <!-- Identity -->
+            <div class="card">
+              <h3>Model Identity</h3>
+              <div class="details-grid mt-4" id="mdl-identity-grid"></div>
+            </div>
+            <!-- Performance -->
+            <div class="card">
+              <h3>Model Performance</h3>
+              <div class="details-grid mt-4" id="mdl-perf-grid"></div>
+            </div>
+            <!-- Behavior -->
+            <div class="card">
+              <h3>Model Behavior</h3>
+              <div class="details-grid mt-4" id="mdl-behav-grid"></div>
+            </div>
+          </div>
+
+          <div class="card mt-4">
+            <h3>Model Findings</h3>
+            <div class="table-container mt-4">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Severity</th><th>Finding</th><th>Confidence Basis</th><th>Action</th></tr>
+                </thead>
+                <tbody id="mdl-findings-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: INFERENCE PROVENANCE -->
+      <section id="page-inference" class="page">
+        <div class="page-header">
+          <h1>Inference Provenance</h1>
+          <p class="subtitle">Cryptographically verify inference chains, detect replay attacks, and ensure output tamper-resistance.</p>
+        </div>
+
+        <div class="card form-card">
+          <label>Inference Log (.jsonl)</label>
+          <input type="text" class="input-text w-full" id="inf-log" placeholder="/path/to/inference.jsonl">
+          <button class="btn btn-primary mt-4" id="btn-audit-inference">Verify Provenance</button>
+        </div>
+
+        <div id="inf-results-area" class="mt-4" hidden>
+          <div class="card">
+            <h3>Provenance Chain Visualization</h3>
+            <div class="provenance-viz" id="prov-viz">
+              <!-- SVG generated via JS -->
+            </div>
+          </div>
+
+          <div class="card mt-4">
+            <h3>Event Records</h3>
+            <div class="table-container mt-4">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Event ID</th><th>Timestamp</th><th>Input Digest</th><th>Signature</th><th>Replay</th><th>Status</th></tr>
+                </thead>
+                <tbody id="inf-records-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: EVIDENCE REPORT -->
+      <section id="page-report" class="page">
+        <div class="page-header">
+          <h1>Assurance Report</h1>
+          <p class="subtitle">Unified evidence-based assurance report for the complete pipeline.</p>
+        </div>
+
+        <div class="card form-card mb-4" id="report-inputs">
+          <div class="form-grid">
+            <input type="text" class="input-text" id="rep-ds" placeholder="Dataset Path">
+            <input type="text" class="input-text" id="rep-mdl" placeholder="Model Path">
+            <input type="text" class="input-text" id="rep-manifest" placeholder="Manifest Path">
+            <input type="text" class="input-text" id="rep-inf" placeholder="Inference Log">
+          </div>
+          <button class="btn btn-primary mt-4 w-full" id="btn-full-audit">Generate Final Report</button>
+        </div>
+
+        <div id="rep-results-area" hidden>
+          <div class="report-header card">
+            <div class="report-overall" id="rep-overall-state">PASS</div>
+            <div class="report-stats">
+              <div class="stat"><span class="label">Dataset Integrity</span><span class="val" id="rep-ds-state">—</span></div>
+              <div class="stat"><span class="label">Model Integrity</span><span class="val" id="rep-mdl-state">—</span></div>
+              <div class="stat"><span class="label">Performance</span><span class="val" id="rep-perf-state">—</span></div>
+              <div class="stat"><span class="label">Behavioral</span><span class="val" id="rep-behav-state">—</span></div>
+              <div class="stat"><span class="label">Provenance</span><span class="val" id="rep-prov-state">—</span></div>
+            </div>
+          </div>
+
+          <div class="card mt-4">
+            <h3>Aggregated Findings</h3>
+            <div class="table-container mt-4">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Severity</th><th>Component</th><th>Finding</th><th>Evidence</th><th>Action</th></tr>
+                </thead>
+                <tbody id="rep-findings-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: COVERAGE -->
+      <section id="page-coverage" class="page">
+        <div class="page-header">
+          <h1>Coverage Matrix</h1>
+          <p class="subtitle">System capability matrix for SIH26228 requirements.</p>
+        </div>
+        <div id="coverage-container" class="coverage-container mt-4">
+          <!-- JS injected -->
+        </div>
+      </section>
+
+    </main>
   </div>
 
-  <div id="ds-results" class="results-area" hidden>
-    <div class="results-header">
-      <div class="verdict-badge" id="ds-verdict-badge"></div>
-      <div class="severity-chips" id="ds-severity-chips"></div>
+  <!-- EVIDENCE DRAWER -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <aside class="evidence-drawer" id="evidence-drawer">
+    <div class="drawer-header">
+      <h3 id="drawer-title">Finding Details</h3>
+      <button class="icon-btn" id="drawer-close">✕</button>
     </div>
-
-    <!-- Findings table -->
-    <div class="section-label">Security Findings</div>
-    <div class="table-wrapper">
-      <table class="findings-table" id="ds-findings-table">
-        <thead>
-          <tr>
-            <th>Check ID</th><th>Name</th><th>Result</th><th>Severity</th><th>Confidence</th><th>Details</th>
-          </tr>
-        </thead>
-        <tbody id="ds-findings-body"></tbody>
-      </table>
+    <div class="drawer-content" id="drawer-content">
+      <!-- Injected -->
     </div>
+  </aside>
 
-    <!-- Image records -->
-    <div class="section-label" style="margin-top:24px">Dataset Images (first 20)</div>
-    <div class="image-grid" id="ds-image-grid"></div>
-  </div>
-
-  <div id="ds-spinner" class="spinner-area" hidden>
-    <div class="spinner"></div><span>Running audit...</span>
-  </div>
-  <div id="ds-error" class="error-banner" hidden></div>
-</section>
-
-<!-- =========================================================
-  PANEL: MODEL INTEGRITY
-========================================================= -->
-<section class="panel" id="panel-model" aria-label="Model Integrity" hidden>
-  <div class="panel-header">
-    <h1 class="panel-title">Model Identity and Integrity</h1>
-    <p class="panel-desc">Verify model artifact hashes against a reference manifest, validate format and structure, and detect substitution or corruption.</p>
-  </div>
-
-  <div class="form-card">
-    <div class="form-row">
-      <div class="field-group">
-        <label class="field-label" for="mdl-path">Model artifact path (.pt / .onnx)</label>
-        <input class="field-input" type="text" id="mdl-path" placeholder="Path to model artifact" value="" />
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="mdl-manifest">Manifest path (optional)</label>
-        <input class="field-input" type="text" id="mdl-manifest" placeholder="Path to manifest.json" value="" />
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-primary" id="btn-audit-model">Run Model Audit</button>
-    </div>
-  </div>
-
-  <div id="mdl-results" class="results-area" hidden>
-    <div class="results-header">
-      <div class="verdict-badge" id="mdl-verdict-badge"></div>
-      <div class="severity-chips" id="mdl-severity-chips"></div>
-    </div>
-    <div class="section-label">Model Metadata</div>
-    <div class="meta-grid" id="mdl-meta-grid"></div>
-    <div class="section-label" style="margin-top:24px">Security Findings</div>
-    <div class="table-wrapper">
-      <table class="findings-table">
-        <thead>
-          <tr><th>Check ID</th><th>Name</th><th>Result</th><th>Severity</th><th>Confidence</th><th>Details</th></tr>
-        </thead>
-        <tbody id="mdl-findings-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="mdl-spinner" class="spinner-area" hidden><div class="spinner"></div><span>Running audit...</span></div>
-  <div id="mdl-error" class="error-banner" hidden></div>
-</section>
-
-<!-- =========================================================
-  PANEL: INFERENCE VERIFICATION
-========================================================= -->
-<section class="panel" id="panel-inference" aria-label="Inference Verification" hidden>
-  <div class="panel-header">
-    <h1 class="panel-title">Inference Record Verification</h1>
-    <p class="panel-desc">Verify inference log integrity via HMAC-SHA256 signatures, detect replay attacks, and flag backdoor-like behaviour indicators.</p>
-  </div>
-
-  <div class="form-card">
-    <div class="form-row">
-      <div class="field-group">
-        <label class="field-label" for="inf-log">Inference log path (.jsonl)</label>
-        <input class="field-input" type="text" id="inf-log" placeholder="Path to inference log" value="" />
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-primary" id="btn-audit-inference">Run Inference Audit</button>
-    </div>
-  </div>
-
-  <div id="inf-results" class="results-area" hidden>
-    <div class="results-header">
-      <div class="verdict-badge" id="inf-verdict-badge"></div>
-      <div class="severity-chips" id="inf-severity-chips"></div>
-    </div>
-    <div class="section-label">Inference Records</div>
-    <div class="table-wrapper">
-      <table class="findings-table" id="inf-records-table">
-        <thead>
-          <tr><th>Record ID</th><th>Image</th><th>Model</th><th>Predictions</th><th>Hash Status</th><th>HMAC</th></tr>
-        </thead>
-        <tbody id="inf-records-body"></tbody>
-      </table>
-    </div>
-    <div class="section-label" style="margin-top:24px">Security Findings</div>
-    <div class="table-wrapper">
-      <table class="findings-table">
-        <thead>
-          <tr><th>Check ID</th><th>Name</th><th>Result</th><th>Severity</th><th>Confidence</th><th>Details</th></tr>
-        </thead>
-        <tbody id="inf-findings-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="inf-spinner" class="spinner-area" hidden><div class="spinner"></div><span>Running audit...</span></div>
-  <div id="inf-error" class="error-banner" hidden></div>
-</section>
-
-<!-- =========================================================
-  PANEL: ASSURANCE REPORT
-========================================================= -->
-<section class="panel" id="panel-report" aria-label="Assurance Report" hidden>
-  <div class="panel-header">
-    <h1 class="panel-title">Assurance Report</h1>
-    <p class="panel-desc">Run the complete audit pipeline and generate an evidence-backed assurance report with confidence basis, limitations, and recommended actions.</p>
-  </div>
-
-  <div class="form-card">
-    <div class="form-row">
-      <div class="field-group">
-        <label class="field-label" for="rep-ds">Dataset path (optional)</label>
-        <input class="field-input" type="text" id="rep-ds" placeholder="Path to dataset" value="" />
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="rep-mdl">Model path (optional)</label>
-        <input class="field-input" type="text" id="rep-mdl" placeholder="Path to model" value="" />
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="field-group">
-        <label class="field-label" for="rep-manifest">Manifest path (optional)</label>
-        <input class="field-input" type="text" id="rep-manifest" placeholder="Path to manifest.json" value="" />
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="rep-inf">Inference log (optional)</label>
-        <input class="field-input" type="text" id="rep-inf" placeholder="Path to inference log" value="" />
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-primary" id="btn-full-audit">Generate Full Assurance Report</button>
-    </div>
-  </div>
-
-  <div id="rep-results" class="results-area" hidden>
-    <div class="report-summary-card" id="rep-summary-card"></div>
-    <div class="section-label" style="margin-top:24px">All Findings</div>
-    <div class="table-wrapper">
-      <table class="findings-table">
-        <thead>
-          <tr><th>Check ID</th><th>Name</th><th>Result</th><th>Severity</th><th>Confidence</th><th>Description</th></tr>
-        </thead>
-        <tbody id="rep-findings-body"></tbody>
-      </table>
-    </div>
-    <div class="section-label" style="margin-top:24px">Confidence Basis</div>
-    <div class="prose-block" id="rep-confidence"></div>
-    <div class="section-label" style="margin-top:24px">Recommended Actions</div>
-    <ul class="action-list" id="rep-actions"></ul>
-    <div class="section-label" style="margin-top:24px">Limitations</div>
-    <ul class="limitation-list" id="rep-limitations"></ul>
-    <div class="section-label" style="margin-top:24px">Sample Images with Predictions</div>
-    <div class="image-grid" id="rep-image-grid"></div>
-  </div>
-
-  <div id="rep-spinner" class="spinner-area" hidden><div class="spinner"></div><span>Generating report...</span></div>
-  <div id="rep-error" class="error-banner" hidden></div>
-</section>
-
-<!-- =========================================================
-  PANEL: COVERAGE
-========================================================= -->
-<section class="panel" id="panel-coverage" aria-label="Coverage and Limitations" hidden>
-  <div class="panel-header">
-    <h1 class="panel-title">Coverage and Limitations</h1>
-    <p class="panel-desc">A complete statement of implemented features, partial support, unsupported scenarios, assumptions, and known limitations.</p>
-  </div>
-  <div id="coverage-content" class="coverage-grid">
-    <div class="spinner-area"><div class="spinner"></div><span>Loading coverage...</span></div>
-  </div>
-</section>
-
-</main>
-
-<!-- Detail modal -->
-<div class="modal-backdrop" id="modal-backdrop" hidden aria-modal="true" role="dialog">
-  <div class="modal-box">
-    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
-    <div class="modal-title" id="modal-title"></div>
-    <pre class="modal-body" id="modal-body"></pre>
-  </div>
-</div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
