@@ -6,6 +6,7 @@ The TRUSTTRACE CV validation strategy guarantees deterministic assurance of the 
 ```bash
 conda activate mldl
 python -m pytest tests/ -v
+python scripts/demo_behavior.py
 ```
 
 ## Validated Scenarios
@@ -19,12 +20,14 @@ python -m pytest tests/ -v
 - **Distribution Shift (Data Poisoning):** Verifies anomalous RGB pixel distributions are caught using Z-scores, yielding `STATISTICAL_SHIFT`.
 - **Trigger Patterns (Entropy):** Verifies zero-entropy patches on noisy backgrounds trigger an anomaly flag.
 
-### 2. Model Integrity & Behavioral Fingerprinting (5 Scenarios)
+### 2. Model Integrity & Behavioral Fingerprinting (8 Scenarios)
 - **Manifest Matching:** Ensures an unaltered model perfectly aligns with its declared SHA-256.
 - **Asymmetric Signature Verification (Cosign / RSA):** Validates offline cryptographic signature verification of the manifest.
 - **Substitution Detection:** Modifying one byte in the model artifact correctly triggers `ANOMALY_DETECTED`.
-- **Format Structure:** Confirms valid `.pt` and `.onnx` files successfully load structurally (without executing code).
-- **Behavioral Fingerprinting:** Analyzes structural outputs and extracts reliable behavioral statistics dynamically without modifying weights.
+- **Format Structure:** Confirms valid `.pt` and `.onnx` files successfully load structurally.
+- **Behavioral Fingerprinting:** Analyzes predictions and internal white-box PyTorch activations directly via isolated runtime hooks.
+- **Controlled Transformations:** Confirms robust behavioral consistency across image resizes, brightness, contrast, noise, and JPEG.
+- **Trigger Probing:** Re-evaluates clean vs injected synthetic patches deterministically using a real prediction loop.
 
 ### 3. Inference Provenance (4 Scenarios)
 - **Canonical Serialization & Hash:** Ensures dictionary key ordering does not alter payload hash identity.
@@ -33,8 +36,9 @@ python -m pytest tests/ -v
 - **In-toto Chain Verification:** Cryptographically validates log chains for sequence correctness.
 
 ### 4. CV Performance
-- **Metrics Validation:** Validates True Positives, False Positives, False Negatives, and AP/mAP correctness.
+- **Metrics Validation:** Validates True Positives, False Positives, False Negatives.
+- **Proper AP Calculation:** Validates properly sorted 11-point interpolated Precision-Recall area integration.
 
 ## Status
 - **Coverage:** 100% of defined modules
-- **Count:** 81/81 tests passing (Pytest)
+- **Count:** 88/88 tests passing (Pytest)

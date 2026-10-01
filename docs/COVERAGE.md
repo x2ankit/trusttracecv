@@ -29,14 +29,15 @@ Every capability is strictly classified into one of four states:
 *   **Sequence Modification**: SUPPORTED (Cryptographic sequence and previous-hash verification across the chain).
 
 ### 4. MODEL PERFORMANCE
-*   **IoU, TP/FP/FN**: SUPPORTED (Dynamic overlap calculation against reference annotations).
-*   **Precision/Recall**: SUPPORTED.
-*   **AP/mAP**: PARTIALLY SUPPORTED (Simplified estimation based on confidence thresholds against references).
+*   **IoU, TP/FP/FN**: IMPLEMENTED + EXECUTED (Dynamic overlap calculation against reference annotations).
+*   **Precision/Recall**: IMPLEMENTED + EXECUTED.
+*   **AP/mAP**: IMPLEMENTED + EXECUTED (Proper 11-point interpolated integration using confidence-ranked predictions).
 
 ### 5. MODEL BEHAVIORAL ASSESSMENT & TRIGGER SENSITIVITY
-*   **Behavioral Fingerprinting**: SUPPORTED (Calculates object counts, confidence distribution, box areas directly from actual predictions).
-*   **Trigger Pattern Probing (Entropy)**: PARTIALLY SUPPORTED (Low-entropy patch heuristic).
-*   **Trigger Sensitivity**: PARTIALLY SUPPORTED (Deterministic spatial perturbation probes via `trigger_probe.py`).
+*   **Behavioral Fingerprinting (Black-Box & White-Box)**: IMPLEMENTED + EXECUTED (Calculates object counts, confidence distribution, box areas directly from actual predictions. Implements PyTorch forward hooks for activation statistics).
+*   **Controlled Transformation Battery**: IMPLEMENTED + EXECUTED (Resizing, brightness, contrast, noise, JPEG compression stability).
+*   **Trigger Pattern Probing (Entropy)**: IMPLEMENTED + EXECUTED (Low-entropy patch heuristic).
+*   **Trigger Sensitivity Inference Loop**: IMPLEMENTED + EXECUTED (Deterministic spatial perturbation probes via actual model inference in `trigger_probe.py`).
 *   **Adversarial Robustness (ART)**: NOT ASSESSED (Adapter implemented, but ART library not installed locally).
 
 ### 6. BACKDOOR BENCHMARK VALIDATION

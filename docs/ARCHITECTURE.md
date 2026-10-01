@@ -10,11 +10,13 @@ TRUSTTRACE CV
 │   ├── dataset/          # Dataset integrity and label quality checks (COCO, YOLO)
 │   │   ├── inspector.py
 │   │   └── security_checks.py
-│   ├── models/           # Model artifact validation, performance, hashing
+│   ├── models/           # Model artifact validation, performance, hashing, and behavior
 │   │   ├── integrity.py
 │   │   ├── performance.py
 │   │   ├── behavioral_fingerprint.py
-│   │   └── trigger_probe.py
+│   │   ├── trigger_probe.py
+│   │   ├── controlled_transformations.py
+│   │   └── runtime.py
 │   ├── inference/        # Cryptographic signing, provenance chain, and tamper detection
 │   │   ├── verifier.py
 │   │   └── provenance.py
@@ -35,7 +37,10 @@ TRUSTTRACE CV
 │   │   ├── style.css
 │   │   └── app.js
 │   └── cli.py            # Typer-based command-line interface
-├── tests/                # 81+ automated pytest cases
+├── scripts/              # Independent execution and generation scripts
+│   ├── generate_fixtures.py
+│   └── demo_behavior.py
+├── tests/                # 88+ automated pytest cases
 ├── vendor/upstream/      # Cloned upstream reference repositories (isolated)
 └── docs/                 # Comprehensive documentation
 ```
