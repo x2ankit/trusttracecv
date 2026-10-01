@@ -1,5 +1,6 @@
 import logging
 import time
+import numpy as np
 from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -101,21 +102,82 @@ def evaluate_object_detection_performance(
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
         
-        # calculate per class precision, recall, and AP approximation
-        ap_sum = 0.0
+        # Proper AP calculation
         classes_with_gt = 0
-        for c, stats in per_class_stats.items():
-            ctp, cfp, cfn = stats["tp"], stats["fp"], stats["fn"]
-            c_prec = ctp / (ctp + cfp) if (ctp + cfp) > 0 else 0.0
-            c_rec = ctp / (ctp + cfn) if (ctp + cfn) > 0 else 0.0
-            stats["precision"] = c_prec
-            stats["recall"] = c_rec
-            # Simplified AP: just using Precision * Recall as a proxy area if we don't have PR curve
-            stats["ap"] = c_prec * c_rec 
-            if (ctp + cfn) > 0:
-                ap_sum += stats["ap"]
-                classes_with_gt += 1
+        ap_sum = 0.0
+        
+        # Calculate standard object detection AP for each class
+        for c in per_class_stats.keys():
+            c_preds = []
+            for p in predictions:
+                if p["class_id"] == c:
+                    c_preds.append(p)
+                    
+            c_gts = {}
+            total_c_gts = 0
+            for gt in ground_truth:
+                if gt["class_id"] == c:
+                    c_gts.setdefault(gt["image_id"], []).append(gt)
+                    total_c_gts += 1
+            
+            if total_c_gts == 0:
+                continue
                 
+            classes_with_gt += 1
+            
+            # 1. Sort predictions by confidence descending
+            c_preds.sort(key=lambda x: x.get("confidence", x.get("score", 0.0)), reverse=True)
+            
+            # Track which ground truths are matched
+            matched_gts = {img_id: [False] * len(gts) for img_id, gts in c_gts.items()}
+            
+            # Arrays for PR curve
+            tps = np.zeros(len(c_preds))
+            fps = np.zeros(len(c_preds))
+            
+            for pred_idx, p in enumerate(c_preds):
+                img_id = p["image_id"]
+                img_gts = c_gts.get(img_id, [])
+                
+                best_iou = 0.0
+                best_gt_idx = -1
+                
+                # 2. Match predictions to ground-truth objects
+                for gt_idx, gt in enumerate(img_gts):
+                    iou = calculate_iou(p["bbox"], gt["bbox"])
+                    if iou > best_iou:
+                        best_iou = iou
+                        best_gt_idx = gt_idx
+                
+                if best_iou >= iou_thresh:
+                    # 3. Each ground-truth matched at most once
+                    if not matched_gts[img_id][best_gt_idx]:
+                        tps[pred_idx] = 1
+                        matched_gts[img_id][best_gt_idx] = True
+                    else:
+                        fps[pred_idx] = 1
+                else:
+                    fps[pred_idx] = 1
+                    
+            # 4. Cumulative TP and FP
+            cum_tps = np.cumsum(tps)
+            cum_fps = np.cumsum(fps)
+            
+            # 5. Calculate precision and recall
+            recalls = cum_tps / total_c_gts
+            precisions = cum_tps / (cum_tps + cum_fps)
+            
+            # 6. Construct PR curve and 7. Calculate AP (11-point interpolation method)
+            ap = 0.0
+            for t in np.arange(0.0, 1.1, 0.1):
+                p_at_t = 0.0
+                if np.sum(recalls >= t) > 0:
+                    p_at_t = np.max(precisions[recalls >= t])
+                ap += p_at_t / 11.0
+                
+            per_class_stats[c]["ap"] = float(ap)
+            ap_sum += ap
+            
         mAP = ap_sum / classes_with_gt if classes_with_gt > 0 else 0.0
             
         report["thresholds"][str(iou_thresh)] = {
@@ -124,7 +186,8 @@ def evaluate_object_detection_performance(
             "FN": fn,
             "precision": precision,
             "recall": recall,
-            "mAP": mAP,
+            "mAP": float(mAP),
+            "calculation_method": "11-point interpolated AP",
             "per_class": per_class_stats,
             "matched_object_count": tp,
             "missed_object_count": fn,
