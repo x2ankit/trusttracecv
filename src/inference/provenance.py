@@ -53,21 +53,24 @@ def record_inference_event(event_data: Dict[str, Any]) -> Tuple[bool, str, str]:
     """
     init_db()
     
-    # Generate event ID if not present
+    # Map old format to new format
+    if "event_id" not in event_data and "record_id" in event_data:
+        event_data["event_id"] = event_data["record_id"]
     if "event_id" not in event_data:
         event_data["event_id"] = str(uuid.uuid4())
         
-    # Generate timestamp if not present
     if "timestamp" not in event_data:
         event_data["timestamp"] = time.time()
         
-    # Generate nonce if not present
     if "nonce" not in event_data:
         event_data["nonce"] = os.urandom(16).hex()
         
-    # Create canonical hash
-    canonical_str = canonicalize_record(event_data)
-    record_hash = hashlib.sha256(canonical_str.encode('utf-8')).hexdigest()
+    # We must use payload_hash for replay detection if it exists and we're just recording an existing signed log
+    if "payload_hash" in event_data:
+        record_hash = event_data["payload_hash"]
+    else:
+        canonical_str = canonicalize_record(event_data)
+        record_hash = hashlib.sha256(canonical_str.encode('utf-8')).hexdigest()
     
     db_path = get_db_path()
     try:
