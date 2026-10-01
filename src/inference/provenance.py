@@ -9,11 +9,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = "data/provenance.db"
+def get_db_path() -> str:
+    return os.environ.get("TRUSTTRACE_PROVENANCE_DB", "data/provenance.db")
 
 def init_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    db_path = get_db_path()
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS provenance_events (
@@ -67,8 +69,9 @@ def record_inference_event(event_data: Dict[str, Any]) -> Tuple[bool, str, str]:
     canonical_str = canonicalize_record(event_data)
     record_hash = hashlib.sha256(canonical_str.encode('utf-8')).hexdigest()
     
+    db_path = get_db_path()
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
         cursor.execute('''
