@@ -265,5 +265,28 @@ def evaluate_fingerprint_divergence(
         "metrics": metrics,
         "thresholds": thresholds,
         "observations": divergences if divergences else ["Models exhibit consistent behavioral profiles."],
-        "limitations": "Behavioral consistency does not guarantee safety. True functional equivalence is not proven."
+        "limitations": "Behavioral consistency does not guarantee safety. True functional equivalence is not proven.",
+        "trace": {
+            "operation_id": "BEHAVIORAL_DIVERGENCE",
+            "operation_type": "Black-Box Behavioral Divergence Calculation",
+            "formula": "difference = candidate_mean - reference_mean",
+            "inputs": {
+                "candidate_distributions": {
+                    "mean_object_count": cand_bb["mean_object_count"],
+                    "confidence_mean": cand_bb["confidence_distribution_mean"],
+                    "no_object_rate": cand_bb["no_object_rate"]
+                },
+                "reference_distributions": {
+                    "mean_object_count": ref_bb["mean_object_count"],
+                    "confidence_mean": ref_bb["confidence_distribution_mean"],
+                    "no_object_rate": ref_bb["no_object_rate"]
+                }
+            },
+            "intermediate_values": metrics,
+            "result": f"{len(divergences)} divergence triggers",
+            "threshold": thresholds,
+            "comparison": "diff > threshold",
+            "decision": result,
+            "explanation": "Calculates absolute difference between candidate and reference behavior statistics. If the metrics differ beyond defined thresholds, the candidate is flagged for behavioral shift which may indicate malicious modification."
+        }
     }

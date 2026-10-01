@@ -31,17 +31,22 @@ def main():
     print("TRUSTTRACE CV: END-TO-END BEHAVIOR DEMO")
     print("==================================================")
     
-    # 1. Load assets
+    # 1. Look for a REAL local object detector, e.g. YOLOv5s.pt
+    # The dummy classifiers are now correctly rejected by the runtime.
     models_dir = ROOT / "models" / "fixtures"
     data_dir = ROOT / "data" / "fixtures" / "clean" / "images"
     
-    ref_model_path = models_dir / "dummy_detector_ts.pt"
-    cand_model_path = models_dir / "dummy_detector.pt" # Another format/variant
+    # Check for a real pretrained object detection model (we do not download one)
+    real_detector_paths = list(models_dir.glob("yolo*.pt")) + list(models_dir.glob("fasterrcnn*.pt"))
     
-    if not ref_model_path.exists() or not cand_model_path.exists() or not data_dir.exists():
-        print("BENCHMARK NOT ASSESSED: Missing required model/data fixtures.")
+    if not real_detector_paths:
+        print("REAL OBJECT-DETECTION DEMO = NOT_ASSESSED")
+        print("NO_LOCAL_OBJECT_DETECTOR_AVAILABLE")
         return
         
+    ref_model_path = real_detector_paths[0]
+    cand_model_path = real_detector_paths[0] # Using same model as candidate for demo
+    
     print(f"Loading reference model: {ref_model_path.name}")
     try:
         ref_model, ref_type = load_model_for_inference(ref_model_path)
@@ -51,35 +56,17 @@ def main():
         
     print(f"Loading candidate model: {cand_model_path.name}")
     try:
-        # Load as module to get parameter stats if possible
-        import torch.nn as nn
-        class DummyDetector(nn.Module):
-            def __init__(self):
-                super().__init__()
-                self.features = nn.Sequential(
-                    nn.Conv2d(3, 8, 3, padding=1),
-                    nn.ReLU(),
-                    nn.AdaptiveAvgPool2d(1),
-                )
-                self.classifier = nn.Linear(8, 4)
-
-            def forward(self, x):
-                x = self.features(x)
-                x = x.flatten(1)
-                return self.classifier(x)
-                
-        cand_model = DummyDetector()
-        cand_model.load_state_dict(torch.load(cand_model_path, map_location="cpu", weights_only=True))
-        cand_model.eval()
-        # Create a torchscript wrapper for prediction interface
-        cand_exec = torch.jit.script(cand_model)
-        cand_type = "TorchScript"
+        cand_model, cand_type = load_model_for_inference(cand_model_path)
     except Exception as e:
         print(f"BENCHMARK NOT ASSESSED: Could not load candidate model: {e}")
         return
         
     reference_images = load_images(data_dir)
     print(f"Loaded {len(reference_images)} reference images.")
+    
+    if not reference_images:
+        print("REAL OBJECT-DETECTION DEMO = NOT_ASSESSED")
+        return
     
     print("\n--- BEHAVIORAL FINGERPRINTING ---")
     print("Generating reference fingerprint...")
@@ -100,7 +87,7 @@ def main():
         
     print("\n--- CONTROLLED TRANSFORMATIONS BATTERY ---")
     print("Running transformations on candidate model...")
-    t_res = run_controlled_transformation_battery(cand_exec, cand_type, reference_images)
+    t_res = run_controlled_transformation_battery(cand_model, cand_type, reference_images)
     print(f"Result: {t_res['result']}")
     print(f"Avg Count Diff: {t_res['metrics']['avg_count_diff']:.2f}")
     print(f"Avg Conf Diff: {t_res['metrics']['avg_conf_diff']:.2f}")
@@ -108,7 +95,7 @@ def main():
     
     print("\n--- TRIGGER SENSITIVITY PROBE ---")
     print("Probing candidate model for trigger sensitivity...")
-    trig_evs = probe_trigger_sensitivity("cand_model", cand_exec, cand_type, reference_images)
+    trig_evs = probe_trigger_sensitivity("cand_model", cand_model, cand_type, reference_images)
     for ev in trig_evs:
         d = ev.to_dict()
         print(f"Finding: {d['finding_type']}")

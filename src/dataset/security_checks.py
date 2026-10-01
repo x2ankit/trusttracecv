@@ -30,6 +30,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 from PIL import Image
 
+try:
+    from src.api.audit_db import log_event
+except ImportError:
+    log_event = None
+
 logger = logging.getLogger(__name__)
 
 SEVERITY_LEVELS = ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO")
@@ -67,6 +72,7 @@ def _sha256_bytes(data: bytes) -> str:
 def check_duplicate_flooding(
     records: List[Dict[str, Any]],
     threshold_pct: float = 0.05,
+    audit_id: str = "",
 ) -> Dict[str, Any]:
     """
     Detect exact-duplicate images via SHA-256 hash grouping.
@@ -94,6 +100,14 @@ def check_duplicate_flooding(
     if dup_pct >= threshold_pct:
         result = "ANOMALY_DETECTED"
         severity = "HIGH" if dup_pct >= 0.25 else "MEDIUM"
+        
+    if audit_id and log_event:
+        log_event(audit_id, "Duplicate Flooding", "Excess Duplicate Rate", 
+                  {"total": total, "dup_count": dup_count}, 
+                  "rate = dup_count / total", 
+                  {"rate": dup_pct, "threshold": threshold_pct}, 
+                  f"{dup_pct:.4f}", f"{threshold_pct:.4f}", 
+                  result, "", 0, "WARNING" if result != "PASS" else "PASS")
 
     return {
         "check_id": "SEC-DS-001",
@@ -124,6 +138,23 @@ def check_duplicate_flooding(
             "Detects only exact byte-for-byte duplicates. Near-duplicates, "
             "perceptually similar images, or watermarked copies will NOT be detected."
         ),
+        "trace": {
+            "operation_id": "SHA256_DUPLICATE_CHECK",
+            "operation_type": "Exact Hash Comparison",
+            "formula": "duplicate_fraction = samples_in_duplicate_groups / total_samples",
+            "inputs": {
+                "total_samples": total,
+                "samples_in_duplicate_groups": dup_count
+            },
+            "intermediate_values": {
+                "duplicate_groups": [{"hash": k, "count": len(v)} for k, v in list(dup_groups.items())[:5]]
+            },
+            "result": round(dup_pct, 4),
+            "threshold": threshold_pct,
+            "comparison": f"{dup_pct:.4f} >= {threshold_pct}",
+            "decision": result,
+            "explanation": "Calculates the fraction of identical image bytes via SHA-256 digest equality. Zero duplicates correctly produce 0.0 fraction."
+        }
     }
 
 
@@ -216,6 +247,7 @@ def check_trigger_patterns(
     patch_size: int = 16,
     entropy_threshold: float = 1.0,
     min_flagged_patches: int = 1,
+    audit_id: str = "",
 ) -> Dict[str, Any]:
     """
     Search for low-entropy (uniform / near-uniform) rectangular patches
@@ -247,6 +279,18 @@ def check_trigger_patterns(
             for x in range(0, w - patch_size + 1, patch_size):
                 patch = arr[y:y + patch_size, x:x + patch_size]
                 ent = _patch_entropy(patch)
+                
+                # Only log heavily anomalous patches to prevent flooding SQLite
+                if ent < entropy_threshold + 0.5:
+                    if audit_id and log_event:
+                        res_str = "TRUE" if ent < entropy_threshold else "FALSE"
+                        stat_str = "WARNING" if ent < entropy_threshold else "PASS"
+                        log_event(audit_id, "Trigger Analysis", "Patch Shannon Entropy", 
+                                  {"file": img_path.name, "x": x, "y": y, "w": patch_size}, 
+                                  "H(X) = -sum(p * log2(p))", 
+                                  {"H": ent, "threshold": entropy_threshold}, 
+                                  res_str, f"H < {entropy_threshold:.2f}", stat_str, "", 0, stat_str)
+
                 if ent < entropy_threshold:
                     flagged_patches.append({
                         "top_left": [x, y],
@@ -296,6 +340,23 @@ def check_trigger_patterns(
             "Sophisticated texture-based triggers may not be detected. "
             "A positive result indicates an anomaly requiring review, NOT a confirmed attack."
         ),
+        "trace": {
+            "operation_id": "TRIGGER_ENTROPY",
+            "operation_type": "Shannon Entropy Low-Texture Heuristic",
+            "formula": "H(X) = -sum(p_i * log2(p_i))",
+            "inputs": {
+                "images_scanned": len(image_paths),
+                "patch_size": patch_size
+            },
+            "intermediate_values": {
+                "flagged_patches_found": sum(img["flagged_patch_count"] for img in flagged_images) if flagged_images else 0
+            },
+            "result": f"{len(flagged_images)} flagged",
+            "threshold": entropy_threshold,
+            "comparison": f"H(X) < {entropy_threshold}",
+            "decision": result,
+            "explanation": "Calculates Shannon entropy of pixel value distribution within sliding windows. A low entropy indicates a highly uniform patch which acts as a heuristic indicator for potential backdoor triggers, though benign uniform surfaces will also flag."
+        }
     }
 
 
@@ -306,6 +367,7 @@ def check_trigger_patterns(
 def check_data_poisoning(
     records: List[Dict[str, Any]],
     z_threshold: float = 3.0,
+    audit_id: str = "",
 ) -> Dict[str, Any]:
     """
     Detect potential poisoned images via statistical outlier analysis
@@ -349,6 +411,14 @@ def check_data_poisoning(
     flagged: List[Dict] = []
     for i, (name, z_vec) in enumerate(zip(names, z_scores)):
         max_z = float(z_vec.max())
+        # Log only near-threshold or flagged samples to avoid flooding
+        if max_z > z_threshold - 1.0 and audit_id and log_event:
+            res_str = "TRUE" if max_z > z_threshold else "NEAR"
+            stat_str = "WARNING" if max_z > z_threshold else "PASS"
+            log_event(audit_id, "Data Poisoning", "Z-Score Evaluation",
+                      {"file": name}, "z = abs((x - mu) / sigma)",
+                      {"max_z": round(max_z, 4), "threshold": z_threshold},
+                      res_str, f"z > {z_threshold}", stat_str, "", 0, stat_str)
         if max_z > z_threshold:
             flagged.append({
                 "filename": name,
@@ -394,4 +464,22 @@ def check_data_poisoning(
             "Systematic poisoning of many images may shift the mean and evade detection. "
             "A positive result indicates an anomaly, NOT a confirmed poisoned sample."
         ),
+        "trace": {
+            "operation_id": "STATISTICAL_Z_SCORE",
+            "operation_type": "Z-Score Statistical Outlier Analysis",
+            "formula": "z = |x - mean| / standard_deviation",
+            "inputs": {
+                "population_size": len(pixel_data),
+                "features_per_sample": 6
+            },
+            "intermediate_values": {
+                "population_means": [round(float(m), 4) for m in means],
+                "population_stds": [round(float(s), 4) for s in stds],
+            },
+            "result": f"{len(flagged)} outliers detected",
+            "threshold": z_threshold,
+            "comparison": f"max_z > {z_threshold}",
+            "decision": result,
+            "explanation": "Standardized normal deviations computed per feature channel. Flags samples whose pixel deviations exceed threshold, which may indicate injected poisoned samples or benign distribution shifts."
+        }
     }

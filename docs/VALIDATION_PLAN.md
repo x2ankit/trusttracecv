@@ -39,6 +39,19 @@ python scripts/demo_behavior.py
 - **Metrics Validation:** Validates True Positives, False Positives, False Negatives.
 - **Proper AP Calculation:** Validates properly sorted 11-point interpolated Precision-Recall area integration.
 
+### 5. UI Visual Verification
+- **Bounding Box Rendering (YOLO/COCO):** Evaluators can verify bounding box correctness manually:
+  1. Open the UI at `http://127.0.0.1:8000/`.
+  2. Upload `testcoco128.zip` using the 'YOLO' format selection.
+  3. Wait for the audit to finish. 
+  4. View the images in the Dataset Audit results page by clicking the thumbnails on the left side.
+  5. The bounding boxes will overlay the image perfectly. Hover over the boxes to see class tooltips. Verify that coordinate scales handle image aspect ratios correctly without stretching or misaligning.
+  6. The dataset hash will be populated in the Summary Card.
+  7. **Mathematical Trace Verification**: 
+      - In the "Dataset File (.zip)" audit, scroll down to the "Object Table". Click the "Trace" button on any annotation to view the raw coordinate math conversion bounds (e.g. `0 <= x_center <= 1`) exactly as executed.
+      - In the "Findings" table, click "View Details" on a statistical outlier (e.g., `SEC-DS-004`) to expand the Mathematical Execution Trace drawer, displaying the real z-score evaluation logic (`|z_score| > 3.0`) and actual distribution metrics evaluated.
+      - Switch to the "Model Integrity" tab and run the audit. Click on a finding to expose cryptographic trace execution (e.g., deterministic SHA-256 comparison and signature validation logic).
+
 ## Status
 - **Coverage:** 100% of defined modules
-- **Count:** 88/88 tests passing (Pytest)
+- **Count:** 90/90 tests passing (Pytest)

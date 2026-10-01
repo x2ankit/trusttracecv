@@ -1,0 +1,386 @@
+{
+  "schema_version": "1.0.0",
+  "report_id": "a9cc7751-7944-48a7-9ed0-9bdd6639e119",
+  "generated_at": "2026-10-01T20:17:22Z",
+  "target_name": "Full Audit",
+  "audit_seed": 42,
+  "system_info": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_version": "3.12.14 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:37:13) [MSC v.1942 64 bit (AMD64)]",
+    "hostname": "DESKTOP-7P9LG10"
+  },
+  "verdict": "PASS",
+  "severity_summary": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 14
+  },
+  "findings_count": 14,
+  "sections": {
+    "dataset": {
+      "summary": {
+        "total_images": 10,
+        "class_counts": {
+          "0": 3,
+          "1": 3,
+          "2": 2,
+          "3": 2
+        }
+      },
+      "findings": [
+        {
+          "evidence_id": "CL_NA_6ba1e74b",
+          "asset_id": "data/fixtures/clean",
+          "finding_type": "CLEANLAB_LABEL_EVALUATION",
+          "category": "LABEL_QUALITY",
+          "method": "cleanlab_object_detection",
+          "status": "NOT_ASSESSED",
+          "severity": "INFO",
+          "confidence_basis": "N/A",
+          "observations": "Cleanlab object detection capability cannot be assessed because the required library is unavailable.",
+          "threshold": null,
+          "reference_id": null,
+          "affected_assets": null,
+          "source_metadata": null,
+          "limitations": "cleanlab package is not installed in the current environment.",
+          "recommended_action": "Install cleanlab to enable label consistency checks.",
+          "trace": null,
+          "timestamp": 1790885842.3684042
+        }
+      ]
+    },
+    "models": {
+      "summary": {
+        "filename": "dummy_detector.pt",
+        "sha256": "c5c7ff87acf9f324a6fb180d8ecf20d3df0c39d341ec07326c90448d39e7dabe"
+      },
+      "findings": [
+        {
+          "check_id": "SEC-MDL-001",
+          "name": "Model Substitution / Integrity Check",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "result": "PASS",
+            "detail": "SHA-256 matches reference manifest",
+            "expected": "c5c7ff87acf9f324a6fb180d8ecf20d3df0c39d341ec07326c90448d39e7dabe",
+            "actual": "c5c7ff87acf9f324a6fb180d8ecf20d3df0c39d341ec07326c90448d39e7dabe"
+          },
+          "description": "SHA-256 matches reference manifest",
+          "recommended_action": "No action.",
+          "limitation": "Hash confirms identity, not safety."
+        },
+        {
+          "check_id": "SEC-MDL-003",
+          "name": "Manifest Cryptographic Signature",
+          "result": "NOT ASSESSED",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "result": "NOT ASSESSED",
+            "detail": "Manifest is unsigned."
+          },
+          "description": "Manifest is unsigned.",
+          "recommended_action": "No action.",
+          "limitation": "Requires original signing key."
+        }
+      ]
+    },
+    "inference": {
+      "findings": [
+        {
+          "check_id": "SEC-INF-001",
+          "name": "Inference Record Tamper Verification",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "e203a731-b944-4c59-99d0-d57117666fb7",
+            "stored_hash": "24cdf5a2ccadb2867bf45a8ee783c2a39fd7c8b1daf2a144bb2433eae5a5d58b",
+            "expected_hash": "24cdf5a2ccadb2867bf45a8ee783c2a39fd7c8b1daf2a144bb2433eae5a5d58b",
+            "hash_match": true,
+            "hmac_valid": true
+          },
+          "description": "Payload hash and HMAC signature verified.",
+          "recommended_action": "If tampering is detected, quarantine the record and re-run inference with a verified model on the original image. Audit the inference pipeline.",
+          "limitation": "Verification requires the original signing key. If the key is rotated or unavailable, this check cannot be performed."
+        },
+        {
+          "check_id": "SEC-INF-002",
+          "name": "Inference Replay Detection",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "e203a731-b944-4c59-99d0-d57117666fb7",
+            "payload_hash": "24cdf5a2ccadb2867bf45a8ee783c2a39fd7c8b1daf2a144bb2433eae5a5d58b",
+            "record_hash": "24cdf5a2ccadb2867bf45a8ee783c2a39fd7c8b1daf2a144bb2433eae5a5d58b",
+            "is_replay": false
+          },
+          "description": "No replay detected. Event recorded in provenance.",
+          "recommended_action": "No action required.",
+          "limitation": "Replay detection is based on payload equality via record_hash."
+        },
+        {
+          "check_id": "SEC-INF-001",
+          "name": "Inference Record Tamper Verification",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "e903ce3a-fac8-4c46-a752-c66c95987d14",
+            "stored_hash": "b7be4cf2d1360cbca87cdd1e6304edf88d16d5aa984a3ae6c916acf7a2d592ba",
+            "expected_hash": "b7be4cf2d1360cbca87cdd1e6304edf88d16d5aa984a3ae6c916acf7a2d592ba",
+            "hash_match": true,
+            "hmac_valid": true
+          },
+          "description": "Payload hash and HMAC signature verified.",
+          "recommended_action": "If tampering is detected, quarantine the record and re-run inference with a verified model on the original image. Audit the inference pipeline.",
+          "limitation": "Verification requires the original signing key. If the key is rotated or unavailable, this check cannot be performed."
+        },
+        {
+          "check_id": "SEC-INF-002",
+          "name": "Inference Replay Detection",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "e903ce3a-fac8-4c46-a752-c66c95987d14",
+            "payload_hash": "b7be4cf2d1360cbca87cdd1e6304edf88d16d5aa984a3ae6c916acf7a2d592ba",
+            "record_hash": "b7be4cf2d1360cbca87cdd1e6304edf88d16d5aa984a3ae6c916acf7a2d592ba",
+            "is_replay": false
+          },
+          "description": "No replay detected. Event recorded in provenance.",
+          "recommended_action": "No action required.",
+          "limitation": "Replay detection is based on payload equality via record_hash."
+        },
+        {
+          "check_id": "SEC-INF-001",
+          "name": "Inference Record Tamper Verification",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "896bfe64-62e5-49cb-bb1b-b08ee506e9e2",
+            "stored_hash": "9eaf598f36292e52f75451c3022b83ec3a098949ccbb365628f7904f23c92f55",
+            "expected_hash": "9eaf598f36292e52f75451c3022b83ec3a098949ccbb365628f7904f23c92f55",
+            "hash_match": true,
+            "hmac_valid": true
+          },
+          "description": "Payload hash and HMAC signature verified.",
+          "recommended_action": "If tampering is detected, quarantine the record and re-run inference with a verified model on the original image. Audit the inference pipeline.",
+          "limitation": "Verification requires the original signing key. If the key is rotated or unavailable, this check cannot be performed."
+        },
+        {
+          "check_id": "SEC-INF-002",
+          "name": "Inference Replay Detection",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "896bfe64-62e5-49cb-bb1b-b08ee506e9e2",
+            "payload_hash": "9eaf598f36292e52f75451c3022b83ec3a098949ccbb365628f7904f23c92f55",
+            "record_hash": "9eaf598f36292e52f75451c3022b83ec3a098949ccbb365628f7904f23c92f55",
+            "is_replay": false
+          },
+          "description": "No replay detected. Event recorded in provenance.",
+          "recommended_action": "No action required.",
+          "limitation": "Replay detection is based on payload equality via record_hash."
+        },
+        {
+          "check_id": "SEC-INF-001",
+          "name": "Inference Record Tamper Verification",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "328ac77b-0dc7-4aee-adf5-198232c0ed8c",
+            "stored_hash": "4e611e4188fec0fbc82eec0f976ff62153ce1ee30cdc0d5c916ccac8b38dff08",
+            "expected_hash": "4e611e4188fec0fbc82eec0f976ff62153ce1ee30cdc0d5c916ccac8b38dff08",
+            "hash_match": true,
+            "hmac_valid": true
+          },
+          "description": "Payload hash and HMAC signature verified.",
+          "recommended_action": "If tampering is detected, quarantine the record and re-run inference with a verified model on the original image. Audit the inference pipeline.",
+          "limitation": "Verification requires the original signing key. If the key is rotated or unavailable, this check cannot be performed."
+        },
+        {
+          "check_id": "SEC-INF-002",
+          "name": "Inference Replay Detection",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "328ac77b-0dc7-4aee-adf5-198232c0ed8c",
+            "payload_hash": "4e611e4188fec0fbc82eec0f976ff62153ce1ee30cdc0d5c916ccac8b38dff08",
+            "record_hash": "4e611e4188fec0fbc82eec0f976ff62153ce1ee30cdc0d5c916ccac8b38dff08",
+            "is_replay": false
+          },
+          "description": "No replay detected. Event recorded in provenance.",
+          "recommended_action": "No action required.",
+          "limitation": "Replay detection is based on payload equality via record_hash."
+        },
+        {
+          "check_id": "SEC-INF-001",
+          "name": "Inference Record Tamper Verification",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "1f654524-091d-4c2d-a7b6-99d3eee52749",
+            "stored_hash": "ace63c382c3bcd4ffbb6def331e89a010e4f6eaeeda519d3c1534231b23cf3f4",
+            "expected_hash": "ace63c382c3bcd4ffbb6def331e89a010e4f6eaeeda519d3c1534231b23cf3f4",
+            "hash_match": true,
+            "hmac_valid": true
+          },
+          "description": "Payload hash and HMAC signature verified.",
+          "recommended_action": "If tampering is detected, quarantine the record and re-run inference with a verified model on the original image. Audit the inference pipeline.",
+          "limitation": "Verification requires the original signing key. If the key is rotated or unavailable, this check cannot be performed."
+        },
+        {
+          "check_id": "SEC-INF-002",
+          "name": "Inference Replay Detection",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "record_id": "1f654524-091d-4c2d-a7b6-99d3eee52749",
+            "payload_hash": "ace63c382c3bcd4ffbb6def331e89a010e4f6eaeeda519d3c1534231b23cf3f4",
+            "record_hash": "ace63c382c3bcd4ffbb6def331e89a010e4f6eaeeda519d3c1534231b23cf3f4",
+            "is_replay": false
+          },
+          "description": "No replay detected. Event recorded in provenance.",
+          "recommended_action": "No action required.",
+          "limitation": "Replay detection is based on payload equality via record_hash."
+        },
+        {
+          "evidence_id": "INTOTO_0e87852c",
+          "asset_id": "full_audit",
+          "finding_type": "INTOTO_PROVENANCE_CHAIN",
+          "category": "PROVENANCE",
+          "method": "in-toto_adapter",
+          "status": "PASS",
+          "severity": "INFO",
+          "confidence_basis": "In-toto local link verification",
+          "observations": "In-toto-style evidence chain generated with 3 stages.",
+          "threshold": null,
+          "reference_id": null,
+          "affected_assets": null,
+          "source_metadata": {
+            "chain": [
+              {
+                "link": {
+                  "_type": "link",
+                  "name": "dataset_audit",
+                  "materials": {
+                    "dataset": "data/fixtures/clean"
+                  },
+                  "products": {},
+                  "command": "audit_dataset",
+                  "environment": {
+                    "name": "trusttrace-cv"
+                  }
+                },
+                "hash": "3a4662c6b2d616c59557d26e25af874ec92585408a52cd5ae000d45662e06781"
+              },
+              {
+                "link": {
+                  "_type": "link",
+                  "name": "model_verification",
+                  "materials": {
+                    "model": "models/fixtures/dummy_detector.pt"
+                  },
+                  "products": {},
+                  "command": "audit_model",
+                  "environment": {
+                    "name": "trusttrace-cv"
+                  }
+                },
+                "hash": "af68edb0439e33df47c41b1482902200e659d1c3318ee9cf4aec5712e35ee8d7"
+              },
+              {
+                "link": {
+                  "_type": "link",
+                  "name": "inference",
+                  "materials": {
+                    "log": "data/fixtures/inference_logs/inference_log.jsonl"
+                  },
+                  "products": {},
+                  "command": "audit_inference",
+                  "environment": {
+                    "name": "trusttrace-cv"
+                  }
+                },
+                "hash": "2457f01d530f2a049336a631d611a0b197cbc28734a630ae77701b41a0d2502b"
+              }
+            ]
+          },
+          "limitations": "Adapts in-toto semantics for CV inference offline. Software supply chain semantics not blindly copied.",
+          "recommended_action": null,
+          "trace": null,
+          "timestamp": 1790885842.369404
+        }
+      ]
+    }
+  },
+  "coverage": {
+    "implemented": [
+      "SEC-DS-001: Duplicate flooding detection (SHA-256, exact match)",
+      "SEC-DS-002: Label flipping detection (vs reference annotations)",
+      "SEC-DS-003: Trigger pattern insertion (patch entropy heuristic)",
+      "SEC-DS-004: Data poisoning via statistical outlier (Z-score on pixel stats)",
+      "SEC-DS-005: OOD insertion via Mahalanobis distance on pixel distribution",
+      "SEC-MDL-001: Model substitution / integrity via SHA-256 manifest",
+      "SEC-MDL-002: Model structural validation (loadability, format, metadata)",
+      "SEC-INF-001: Inference record tamper verification (HMAC-SHA256)",
+      "SEC-INF-002: Inference replay detection (payload hash deduplication)",
+      "SEC-INF-003: Backdoor-like behaviour indicator (confidence threshold)",
+      "Dataset inspection: YOLO format (image, resolution, labels, bounding boxes)",
+      "Dataset inspection: COCO format (annotations JSON, category distribution)"
+    ],
+    "partial": [
+      "ONNX model inspection (requires onnx package; checker may fail on non-standard models)",
+      "TorchScript loading (falls back gracefully; graph semantics not verified)",
+      "Label flipping (requires trusted reference; if absent \u2192 NOT ASSESSED)",
+      "Trigger detection (heuristic only; low confidence; sophisticated triggers may evade)"
+    ],
+    "unsupported": [
+      "Universal backdoor detection (not mathematically feasible via static analysis alone)",
+      "Semantic correctness of model weights",
+      "Real-time streaming inference monitoring",
+      "Near-duplicate image detection (perceptual hashing)",
+      "Adversarial robustness evaluation (requires inference budget)",
+      "Attribution / membership inference attacks"
+    ],
+    "assumptions": [
+      "Dataset is provided in standard COCO or YOLO format.",
+      "Model files are in PyTorch (.pt/.pth), TorchScript (.pt), or ONNX (.onnx) format.",
+      "Inference records are produced by record_inference() or conform to that schema.",
+      "A trusted reference annotation set exists for label-flipping detection.",
+      "A reference manifest (SHA-256 per model file) exists for substitution detection."
+    ],
+    "known_limitations": [
+      "Statistical anomaly detection (Z-score, Mahalanobis, entropy) produces probabilistic signals; false positives and false negatives are expected.",
+      "SHA-256 matching confirms file identity, NOT model safety.",
+      "Trigger pattern search is entropy-based and cannot detect sophisticated textured triggers.",
+      "HMAC signature verification requires the original signing key.",
+      "Replay detection can be evaded by modifying any non-critical record field.",
+      "Backdoor-like behaviour indicator (high confidence) cannot distinguish legitimate high confidence from triggered behaviour without ground truth.",
+      "All checks assume honest and complete input data. Adversarially crafted inputs that comply with the expected format may not be detected."
+    ]
+  },
+  "confidence_basis": "Deterministic checks (hash comparison, HMAC verification, exact duplicate detection) carry HIGH confidence. Statistical checks (Z-score, Mahalanobis distance, entropy) carry LOW to MEDIUM confidence and require human review. All anomaly findings represent candidates for investigation, not confirmed attacks.",
+  "limitations_summary": [
+    "Statistical anomaly detection (Z-score, Mahalanobis, entropy) produces probabilistic signals; false positives and false negatives are expected.",
+    "SHA-256 matching confirms file identity, NOT model safety.",
+    "Trigger pattern search is entropy-based and cannot detect sophisticated textured triggers.",
+    "HMAC signature verification requires the original signing key.",
+    "Replay detection can be evaded by modifying any non-critical record field.",
+    "Backdoor-like behaviour indicator (high confidence) cannot distinguish legitimate high confidence from triggered behaviour without ground truth.",
+    "All checks assume honest and complete input data. Adversarially crafted inputs that comply with the expected format may not be detected."
+  ],
+  "recommended_actions": []
+}

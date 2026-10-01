@@ -48,6 +48,9 @@ Every capability is strictly classified into one of four states:
 *   **Data Poisoning (Statistical Outlier)**: SUPPORTED (Z-score on pixel means/stds returning STATISTICAL_SHIFT).
 *   **OOD Insertion**: PARTIALLY SUPPORTED (Mahalanobis distance on pixel distribution).
 
+## Pending Refactors
+*   No unfulfilled tests remain. Test suite currently passing with 90/90 tests valid. Future refactors could mock the `CleanVision`, `Cleanlab`, and `ART` dependencies to validate adapters deeper in CI environments.
+
 ## Excluded Capabilities (OUT OF SCOPE)
 *   Training or fine-tuning an ML-based validator model.
 *   Modification or recalibration of candidate model weights.

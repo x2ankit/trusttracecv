@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0.0",
+  "report_id": "e2c70e40-6169-4849-b0ce-64fb20b11ad5",
+  "generated_at": "2026-10-01T20:18:27Z",
+  "target_name": "data/uploads/dataset_18d4ec22/clean",
+  "audit_seed": 42,
+  "system_info": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_version": "3.12.14 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:37:13) [MSC v.1942 64 bit (AMD64)]",
+    "hostname": "DESKTOP-7P9LG10"
+  },
+  "verdict": "PASS",
+  "severity_summary": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 1
+  },
+  "findings_count": 1,
+  "sections": {
+    "dataset": {
+      "summary": {
+        "dataset_type": "YOLO",
+        "total_images": 10,
+        "class_counts": {
+          "0": 3,
+          "1": 3,
+          "2": 2,
+          "3": 2
+        }
+      },
+      "findings": [
+        {
+          "evidence_id": "CV_NA_e40c4bb7",
+          "asset_id": "data/uploads/dataset_18d4ec22/clean",
+          "finding_type": "CLEANVISION_ANALYSIS",
+          "category": "DATA_QUALITY",
+          "method": "cleanvision",
+          "status": "NOT_ASSESSED",
+          "severity": "INFO",
+          "confidence_basis": "N/A",
+          "observations": "CleanVision capability cannot be assessed because the required library is unavailable.",
+          "threshold": null,
+          "reference_id": null,
+          "affected_assets": null,
+          "source_metadata": null,
+          "limitations": "cleanvision package is not installed in the current environment.",
+          "recommended_action": "Install cleanvision to enable advanced dataset quality checks.",
+          "trace": null,
+          "timestamp": 1790885907.1367245
+        }
+      ]
+    },
+    "models": {
+      "summary": {},
+      "findings": []
+    },
+    "inference": {
+      "findings": []
+    }
+  },
+  "coverage": {
+    "implemented": [
+      "SEC-DS-001: Duplicate flooding detection (SHA-256, exact match)",
+      "SEC-DS-002: Label flipping detection (vs reference annotations)",
+      "SEC-DS-003: Trigger pattern insertion (patch entropy heuristic)",
+      "SEC-DS-004: Data poisoning via statistical outlier (Z-score on pixel stats)",
+      "SEC-DS-005: OOD insertion via Mahalanobis distance on pixel distribution",
+      "SEC-MDL-001: Model substitution / integrity via SHA-256 manifest",
+      "SEC-MDL-002: Model structural validation (loadability, format, metadata)",
+      "SEC-INF-001: Inference record tamper verification (HMAC-SHA256)",
+      "SEC-INF-002: Inference replay detection (payload hash deduplication)",
+      "SEC-INF-003: Backdoor-like behaviour indicator (confidence threshold)",
+      "Dataset inspection: YOLO format (image, resolution, labels, bounding boxes)",
+      "Dataset inspection: COCO format (annotations JSON, category distribution)"
+    ],
+    "partial": [
+      "ONNX model inspection (requires onnx package; checker may fail on non-standard models)",
+      "TorchScript loading (falls back gracefully; graph semantics not verified)",
+      "Label flipping (requires trusted reference; if absent \u2192 NOT ASSESSED)",
+      "Trigger detection (heuristic only; low confidence; sophisticated triggers may evade)"
+    ],
+    "unsupported": [
+      "Universal backdoor detection (not mathematically feasible via static analysis alone)",
+      "Semantic correctness of model weights",
+      "Real-time streaming inference monitoring",
+      "Near-duplicate image detection (perceptual hashing)",
+      "Adversarial robustness evaluation (requires inference budget)",
+      "Attribution / membership inference attacks"
+    ],
+    "assumptions": [
+      "Dataset is provided in standard COCO or YOLO format.",
+      "Model files are in PyTorch (.pt/.pth), TorchScript (.pt), or ONNX (.onnx) format.",
+      "Inference records are produced by record_inference() or conform to that schema.",
+      "A trusted reference annotation set exists for label-flipping detection.",
+      "A reference manifest (SHA-256 per model file) exists for substitution detection."
+    ],
+    "known_limitations": [
+      "Statistical anomaly detection (Z-score, Mahalanobis, entropy) produces probabilistic signals; false positives and false negatives are expected.",
+      "SHA-256 matching confirms file identity, NOT model safety.",
+      "Trigger pattern search is entropy-based and cannot detect sophisticated textured triggers.",
+      "HMAC signature verification requires the original signing key.",
+      "Replay detection can be evaded by modifying any non-critical record field.",
+      "Backdoor-like behaviour indicator (high confidence) cannot distinguish legitimate high confidence from triggered behaviour without ground truth.",
+      "All checks assume honest and complete input data. Adversarially crafted inputs that comply with the expected format may not be detected."
+    ]
+  },
+  "confidence_basis": "Deterministic checks (hash comparison, HMAC verification, exact duplicate detection) carry HIGH confidence. Statistical checks (Z-score, Mahalanobis distance, entropy) carry LOW to MEDIUM confidence and require human review. All anomaly findings represent candidates for investigation, not confirmed attacks.",
+  "limitations_summary": [
+    "Statistical anomaly detection (Z-score, Mahalanobis, entropy) produces probabilistic signals; false positives and false negatives are expected.",
+    "SHA-256 matching confirms file identity, NOT model safety.",
+    "Trigger pattern search is entropy-based and cannot detect sophisticated textured triggers.",
+    "HMAC signature verification requires the original signing key.",
+    "Replay detection can be evaded by modifying any non-critical record field.",
+    "Backdoor-like behaviour indicator (high confidence) cannot distinguish legitimate high confidence from triggered behaviour without ground truth.",
+    "All checks assume honest and complete input data. Adversarially crafted inputs that comply with the expected format may not be detected."
+  ],
+  "recommended_actions": []
+}

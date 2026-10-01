@@ -22,6 +22,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 from PIL import Image
 
+try:
+    from src.api.audit_db import log_event
+except ImportError:
+    log_event = None
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -56,6 +61,24 @@ def _pixel_stats(arr: np.ndarray) -> Dict[str, float]:
         "std_g":  float(flat[:, 1].std()),
         "std_b":  float(flat[:, 2].std()),
     }
+
+def compute_dataset_manifest_hash(base_dir: Path) -> str:
+    """
+    Generate a deterministic SHA-256 manifest for the dataset.
+    Included files: images, annotations (.txt, .json), and config (.yaml).
+    Excluded: hidden files, temporary files, and generated reports.
+    """
+    valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".txt", ".json", ".yaml", ".yml"}
+    paths = sorted([p for p in base_dir.rglob("*") if p.is_file() and p.suffix.lower() in valid_exts and not p.name.startswith(".")])
+    
+    manifest_lines = []
+    for p in paths:
+        if "reports" in p.parts or "temp" in p.parts or ".system_generated" in p.parts:
+            continue
+        rel_path = p.relative_to(base_dir).as_posix()
+        manifest_lines.append(f"{rel_path}:{_sha256_file(p)}")
+        
+    return hashlib.sha256("\n".join(manifest_lines).encode("utf-8")).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +134,7 @@ def parse_coco_dataset(annotations_json: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def inspect_image(image_path: Path, label_path: Optional[Path] = None,
-                  format: str = "yolo") -> Dict[str, Any]:
+                  format: str = "yolo", audit_id: str = "") -> Dict[str, Any]:
     """
     Inspect a single image and its annotation file.
 
@@ -139,6 +162,8 @@ def inspect_image(image_path: Path, label_path: Optional[Path] = None,
 
     # --- SHA-256 ---
     record["sha256"] = _sha256_file(image_path)
+    if audit_id and log_event:
+        log_event(audit_id, "File Hashing", "SHA-256 Digest", {"file": image_path.name}, "H(x)", {}, record["sha256"], "", "Stored", "", 0.0, "PASS")
 
     # --- Image open ---
     arr = _image_array(image_path)
@@ -177,13 +202,26 @@ def inspect_image(image_path: Path, label_path: Optional[Path] = None,
                 }
             else:
                 # Validate coordinate bounds
-                out_of_bounds = [
-                    a for a in anns
-                    if not (0.0 <= a.get("x_center", 0) <= 1.0
+                out_of_bounds = []
+                for a in anns:
+                    cond = (0.0 <= a.get("x_center", 0) <= 1.0
                             and 0.0 <= a.get("y_center", 0) <= 1.0
                             and 0.0 < a.get("width", 0) <= 1.0
-                            and 0.0 < a.get("height", 0) <= 1.0)
-                ]
+                            and 0.0 < a.get("height", 0) <= 1.0
+                            and a.get("class_id", -1) >= 0)
+                    
+                    if audit_id and log_event:
+                        formula = "0 <= x <= 1 AND 0 <= y <= 1 AND 0 < w <= 1 AND 0 < h <= 1"
+                        res_str = "TRUE" if cond else "FALSE"
+                        stat_str = "PASS" if cond else "ERROR"
+                        log_event(audit_id, "Annotation Validation", "YOLO Bounds Check", 
+                                  {"file": image_path.name, "line": a.get("lineno")}, 
+                                  formula, {"x": a.get("x_center"), "y": a.get("y_center"), "w": a.get("width"), "h": a.get("height"), "c": a.get("class_id")}, 
+                                  res_str, "", stat_str, "", 0, stat_str)
+                    
+                    if not cond:
+                        out_of_bounds.append(a)
+
                 if out_of_bounds:
                     record["checks"]["annotation_valid"] = {
                         "result": "FAIL",
@@ -199,8 +237,7 @@ def inspect_image(image_path: Path, label_path: Optional[Path] = None,
 # Batch dataset inspection
 # ---------------------------------------------------------------------------
 
-def inspect_yolo_dataset(images_dir: Path, labels_dir: Path,
-                         class_names: Optional[List[str]] = None) -> Dict[str, Any]:
+def inspect_yolo_dataset(images_dir: Path, labels_dir: Path, audit_id: str = "") -> Dict[str, Any]:
     """
     Inspect a YOLO-format dataset directory.
 
@@ -209,10 +246,27 @@ def inspect_yolo_dataset(images_dir: Path, labels_dir: Path,
     """
     images_dir = Path(images_dir)
     labels_dir = Path(labels_dir)
+    
+    # Try to load class names from data.yaml
+    class_names: Dict[int, str] = {}
+    base_dir = images_dir if images_dir == labels_dir else images_dir.parent
+    yaml_candidates = list(base_dir.glob("*.yaml")) + list(base_dir.glob("*.yml"))
+    if yaml_candidates:
+        import yaml
+        try:
+            with open(yaml_candidates[0], "r") as f:
+                data_yml = yaml.safe_load(f)
+                names = data_yml.get("names", [])
+                if isinstance(names, list):
+                    class_names = {i: name for i, name in enumerate(names)}
+                elif isinstance(names, dict):
+                    class_names = names
+        except Exception as e:
+            logger.warning(f"Failed to load class names from {yaml_candidates[0]}: {e}")
 
     image_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
     image_paths = sorted([
-        p for p in images_dir.iterdir()
+        p for p in images_dir.rglob("*")
         if p.suffix.lower() in image_extensions
     ])
 
@@ -222,8 +276,9 @@ def inspect_yolo_dataset(images_dir: Path, labels_dir: Path,
     pixel_means: List[np.ndarray] = []
 
     for img_path in image_paths:
-        label_path = labels_dir / (img_path.stem + ".txt")
-        rec = inspect_image(img_path, label_path if label_path.exists() else None, format="yolo")
+        rel_path = img_path.relative_to(images_dir)
+        label_path = labels_dir / rel_path.parent / (img_path.stem + ".txt")
+        rec = inspect_image(img_path, label_path if label_path.exists() else None, format="yolo", audit_id=audit_id)
 
         # track hashes for duplicate detection
         sha = rec["sha256"]
@@ -235,7 +290,9 @@ def inspect_yolo_dataset(images_dir: Path, labels_dir: Path,
             cid = ann.get("class_id")
             if cid is not None:
                 class_counts[cid] = class_counts.get(cid, 0) + 1
-
+                if cid in class_names:
+                    ann["class_name"] = class_names[cid]
+        
         # track pixel means for OOD
         ps = rec.get("pixel_stats")
         if isinstance(ps, dict):
@@ -256,13 +313,19 @@ def inspect_yolo_dataset(images_dir: Path, labels_dir: Path,
         try:
             inv_cov = np.linalg.pinv(cov)
             dists = []
-            for vec in means_arr:
+            for i, vec in enumerate(means_arr):
                 diff = vec - global_mean
-                d = float(math.sqrt(max(0.0, diff @ inv_cov @ diff)))
+                sq_dist = diff @ inv_cov @ diff
+                d = float(math.sqrt(max(0.0, sq_dist)))
                 dists.append(d)
+                if audit_id and log_event:
+                    log_event(audit_id, "Statistical Analysis", "Mahalanobis Distance", {"file": records[i]["filename"]}, "D = sqrt((x - mu)^T Sigma^-1 (x - mu))", {"sq_dist": sq_dist, "D": d}, f"{d:.4f}", "", "Computed", "", 0, "PASS")
+            
             threshold = np.mean(dists) + 2.5 * np.std(dists) if len(dists) > 1 else 1e9
             for i, (rec, d) in enumerate(zip(records, dists)):
                 if d > threshold:
+                    if audit_id and log_event:
+                        log_event(audit_id, "Statistical Outliers", "Threshold Comparison", {"file": rec["filename"]}, "D > mean + 2.5*std", {"D": d, "threshold": threshold}, "TRUE", f"{threshold:.4f}", "ANOMALY", "", 0, "WARNING", "Possible OOD sample")
                     ood_flags.append({
                         "filename": rec["filename"],
                         "mahalanobis_distance": round(d, 4),
@@ -272,6 +335,8 @@ def inspect_yolo_dataset(images_dir: Path, labels_dir: Path,
                                 "Possible OOD sample. Manual review recommended.",
                     })
         except np.linalg.LinAlgError:
+            if audit_id and log_event:
+                log_event(audit_id, "Statistical Analysis", "Mahalanobis Matrix Inversion", {}, "inv(cov)", {}, "ERROR", "", "Singular Matrix", "", 0, "ERROR")
             ood_flags = []
 
     # --- Label class imbalance ---
@@ -292,6 +357,7 @@ def inspect_yolo_dataset(images_dir: Path, labels_dir: Path,
 
     return {
         "dataset_type": "YOLO",
+        "dataset_sha256": compute_dataset_manifest_hash(base_dir),
         "images_dir": str(images_dir),
         "labels_dir": str(labels_dir),
         "total_images": len(records),
@@ -310,7 +376,7 @@ def inspect_yolo_dataset(images_dir: Path, labels_dir: Path,
 
 
 def inspect_coco_dataset(annotations_json: Path,
-                         images_dir: Optional[Path] = None) -> Dict[str, Any]:
+                         images_dir: Optional[Path] = None, audit_id: str = "") -> Dict[str, Any]:
     """
     Inspect a COCO-format annotations JSON file.
     Checks annotation validity, duplicate image IDs, and class distribution.
@@ -340,15 +406,35 @@ def inspect_coco_dataset(annotations_json: Path,
 
     records = []
     if images_dir:
+        # Create map of image_id to annotations
+        img_ann_map = {}
+        for ann in annotations:
+            iid = ann.get("image_id")
+            if iid is not None:
+                img_ann_map.setdefault(iid, []).append(ann)
+                
         for img_meta in images[:50]:  # cap at 50 for feasibility
             fname = img_meta.get("file_name", "")
             img_path = Path(images_dir) / fname
-            rec = inspect_image(img_path)
+            rec = inspect_image(img_path, audit_id=audit_id)
             rec["coco_id"] = img_meta.get("id")
+            
+            # Map COCO annotations format to what the frontend expects
+            mapped_anns = []
+            for ann in img_ann_map.get(rec["coco_id"], []):
+                cid = ann.get("category_id")
+                mapped_anns.append({
+                    "class_id": cid,
+                    "class_name": cat_map.get(cid, str(cid)),
+                    "bbox": ann.get("bbox", [0, 0, 0, 0]),
+                    "confidence": ann.get("score")
+                })
+            rec["annotations"] = mapped_anns
             records.append(rec)
 
     return {
         "dataset_type": "COCO",
+        "dataset_sha256": compute_dataset_manifest_hash(annotations_json.parent),
         "annotations_json": str(annotations_json),
         "total_images": len(images),
         "total_annotations": len(annotations),

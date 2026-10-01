@@ -38,13 +38,43 @@ def test_dataset_upload_and_audit():
     ds_path = upload_resp.json()["dataset_path"]
     assert "dataset_" in ds_path
 
-    # 2. Dataset Audit
+    # 2. Dataset Audit - now async, returns audit_id
     audit_resp = client.post("/api/audit/dataset", json={"dataset_path": ds_path, "format": "yolo"})
     assert audit_resp.status_code == 200
     data = audit_resp.json()
-    assert "verdict" in data
-    assert "findings" in data
-    assert "records" in data
+    assert "audit_id" in data
+    assert "status" in data
+    assert data["status"] == "started"
+    
+    audit_id = data["audit_id"]
+    
+    # 3. Poll for completion by checking events endpoint
+    import time
+    max_wait = 60  # seconds
+    start = time.time()
+    completed = False
+    while time.time() - start < max_wait:
+        ev_resp = client.get(f"/api/audit/events/{audit_id}")
+        assert ev_resp.status_code == 200
+        events = ev_resp.json()["events"]
+        # Check if the Finalization event has been written
+        if any(e["check_name"] == "Finalization" and e["status_code"] == "PASS" for e in events):
+            completed = True
+            break
+        if any(e["status_code"] == "ERROR" for e in events):
+            break
+        time.sleep(1)
+    
+    assert completed, f"Audit did not complete within {max_wait}s. Events: {[e['check_name'] for e in events]}"
+    
+    # 4. Verify final report was saved and is retrievable
+    reports_resp = client.get("/api/reports")
+    assert reports_resp.status_code == 200
+    reports = reports_resp.json()
+    assert len(reports) > 0
+    latest = reports[0]
+    assert "verdict" in latest
+    assert "sections" in latest or "findings_count" in latest
 
 def test_inference_audit_and_replay():
     log_path = "data/fixtures/inference_logs/inference_log.jsonl"

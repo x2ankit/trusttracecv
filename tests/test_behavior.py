@@ -43,10 +43,11 @@ def test_trigger_generation_and_application():
     assert not np.array_equal(clean_image, triggered)
 
 def test_trigger_inference_loop():
-    # Use a dummy model that outputs consistent fake boxes
+    # Use a dummy model that outputs consistent boxes
     class DummyModel:
         def __call__(self, x):
-            return torch.tensor([[-2.0, 5.0]]) # Class 1 confident
+            # [batch, preds, features] -> [1, 1, 6]
+            return torch.tensor([[[50.0, 50.0, 20.0, 20.0, 0.9, 1.0]]])
             
     model = DummyModel()
     
@@ -75,6 +76,44 @@ def test_model_runtime_unsupported():
         pytest.fail("Should throw ModelRuntimeError for unsupported extension")
     except ModelRuntimeError as e:
         assert "MODEL_EXECUTION_UNAVAILABLE" in str(e)
+
+def test_runtime_rejects_classification_only_model():
+    class DummyClassifier:
+        def __call__(self, x):
+            # Returns [batch, num_classes]
+            return torch.tensor([[0.1, 0.9]])
+            
+    model = DummyClassifier()
+    img = np.zeros((100, 100, 3), dtype=np.uint8)
+    
+    try:
+        predict(model, "TorchScript", img)
+        pytest.fail("Should throw ModelRuntimeError TASK_UNSUPPORTED_FOR_DETECTION")
+    except ModelRuntimeError as e:
+        assert "TASK_UNSUPPORTED_FOR_DETECTION" in str(e)
+
+def test_runtime_proper_object_detector_parsing():
+    class DummyDetector:
+        def __call__(self, x):
+            # Mock YOLOv8 style output: [batch, features, num_preds]
+            # e.g. [1, 6, 1] where 6 = [x, y, w, h, obj_conf, cls0_prob]
+            # We must output what the parser expects for YOLOv8: shape [1, num_features, num_preds]
+            # Wait, the parser handles [1, num_preds, features] if dim=3 and shape[1] < shape[2] it transposes it.
+            # Let's emit [1, 1, 6] directly as [batch, num_preds, features]
+            
+            # [x_center, y_center, w, h, obj_conf, cls0_prob]
+            out = torch.tensor([[[50.0, 50.0, 20.0, 20.0, 0.9, 1.0]]])
+            return out
+            
+    model = DummyDetector()
+    img = np.zeros((100, 100, 3), dtype=np.uint8)
+    
+    preds = predict(model, "TorchScript", img)
+    assert len(preds) == 1
+    assert preds[0]["class_id"] == 0
+    assert math.isclose(preds[0]["confidence"], 0.9, rel_tol=1e-5)
+    # Bbox should be [x_min, y_min, w, h] = [50 - 10, 50 - 10, 20, 20] = [40, 40, 20, 20]
+    assert preds[0]["bbox"] == [40.0, 40.0, 20.0, 20.0]
 
 # 4. Behavioral Fingerprint Tests
 def test_behavioral_fingerprint_metrics():
@@ -140,12 +179,16 @@ def test_white_box_stats_hooks():
         def __init__(self):
             super().__init__()
             self.features = nn.Conv2d(3, 8, 3, padding=1)
-            self.linear = nn.Linear(8 * 100 * 100, 2)
+            self.pool = nn.AdaptiveAvgPool2d(1)
+            self.linear = nn.Linear(8, 6) # [x, y, w, h, obj_conf, cls]
             
         def forward(self, x):
             x = self.features(x)
+            x = self.pool(x)
             x = x.flatten(1)
-            return self.linear(x)
+            out = self.linear(x)
+            # Reshape to [batch, num_preds, features] -> [1, 1, 6]
+            return out.unsqueeze(1)
             
     model = SimpleModel()
     images = [np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)]

@@ -308,6 +308,25 @@ def inspect_model(
                     "result": "PASS",
                     "detail": f"Manifest {sig_type} signature verified."
                 }
+                
+            record["checks"]["manifest_integrity"]["trace"] = {
+                "operation_id": "MANIFEST_SIG_VERIFY",
+                "operation_type": "Cryptographic Signature Verification",
+                "formula": f"verify({sig_type}, manifest_payload, key)",
+                "inputs": {
+                    "signature_scheme": sig_type,
+                    "payload_keys": [k for k in reference_manifest.keys() if k not in ("hmac_sig", "rsa_sig")],
+                    "public_key_identifier": str(pub_key_path.name) if sig_type == "ASYMMETRIC" else "HMAC_SECRET"
+                },
+                "intermediate_values": {
+                    "provided_signature": reference_manifest.get("rsa_sig") if sig_type == "ASYMMETRIC" else reference_manifest.get("hmac_sig")
+                },
+                "result": "VALID" if sig_valid else "INVALID",
+                "threshold": "Cryptographic Match",
+                "comparison": "verify() == True",
+                "decision": record["checks"]["manifest_integrity"]["result"],
+                "explanation": f"Verifies the {sig_type} signature of the canonicalized manifest dictionary. This ensures the reference hashes have not been maliciously modified since they were signed."
+            }
         else:
             record["checks"]["manifest_integrity"] = {
                 "result": "NOT ASSESSED",
@@ -393,4 +412,23 @@ def check_model_substitution(
             "SHA-256 hash matching verifies file identity, NOT model correctness or safety. "
             "A matching hash does NOT guarantee the model is free of backdoors."
         ),
+        "trace": {
+            "operation_id": "SHA256_MODEL_VERIFY",
+            "operation_type": "Cryptographic File Identity Verification",
+            "formula": "actual_digest == expected_digest",
+            "inputs": {
+                "file_path": str(model_path.name),
+                "file_size_bytes": model_path.stat().st_size if model_path.exists() else None,
+            },
+            "intermediate_values": {
+                "hash_algorithm": "SHA-256",
+                "actual_digest": actual_sha,
+                "expected_digest": expected_sha
+            },
+            "result": "EQUAL" if actual_sha == expected_sha else "NOT EQUAL",
+            "threshold": "Exact Match",
+            "comparison": f"{actual_sha} == {expected_sha}",
+            "decision": result,
+            "explanation": "Calculates the SHA-256 cryptographic hash of the model artifact file and compares it deterministically against the manifest reference hash to ensure bit-level identity."
+        }
     }

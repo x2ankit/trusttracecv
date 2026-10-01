@@ -19,6 +19,7 @@ class Evidence:
     source_metadata: Optional[Dict[str, Any]] = None
     limitations: Optional[str] = None
     recommended_action: Optional[str] = None
+    trace: Optional[Dict[str, Any]] = None
     timestamp: float = 0.0
 
     def __post_init__(self):

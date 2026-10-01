@@ -63,6 +63,7 @@ class DatasetAuditRequest(BaseModel):
     dataset_path: str
     format: str = "yolo"
     seed: int = 42
+    audit_id: str = ""
 
 class ModelAuditRequest(BaseModel):
     model_path: str
@@ -143,65 +144,118 @@ def get_image(path: str):
     return FileResponse(p)
 
 # ---------------------------------------------------------------------------
-# Health
+# Health & Status
 # ---------------------------------------------------------------------------
+AUDIT_STATUS = {"status": "Idle", "detail": ""}
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "timestamp": time.time(), "service": "TRUSTTRACE CV"}
 
+@app.get("/api/audit/status")
+def audit_status():
+    return AUDIT_STATUS
+
 # ---------------------------------------------------------------------------
 # Dataset audit
 # ---------------------------------------------------------------------------
+from src.api.audit_db import log_event, get_events, init_db
+
+@app.get("/api/audit/events/{audit_id}")
+def get_audit_events(audit_id: str):
+    return {"events": get_events(audit_id)}
+
+@app.get("/api/reports")
+def list_reports():
+    """Return all saved dataset audit reports, newest first."""
+    reports = []
+    if REPORTS_DIR.exists():
+        for f in sorted(REPORTS_DIR.glob("dataset_*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                import json as _json
+                data = _json.loads(f.read_text())
+                reports.append(data)
+            except Exception:
+                pass
+    return reports
+
 @app.post("/api/audit/dataset")
-def audit_dataset(req: DatasetAuditRequest):
+def audit_dataset(req: DatasetAuditRequest, background_tasks: BackgroundTasks):
+    import uuid
+    if not req.audit_id:
+        req.audit_id = str(uuid.uuid4())
+    
+    background_tasks.add_task(run_dataset_audit_task, req)
+    return {"status": "started", "audit_id": req.audit_id}
+
+def run_dataset_audit_task(req: DatasetAuditRequest):
+    audit_id = req.audit_id
     base = ROOT / req.dataset_path
+    
+    log_event(audit_id, "Dataset Audit", "Initialize", {"path": req.dataset_path, "format": req.format}, "init()", {}, "STARTED", "", "Audit Initialized", "", 0, "RUNNING")
+    
     if not base.exists():
-        raise HTTPException(status_code=400, detail=f"Path not found: {req.dataset_path}")
+        log_event(audit_id, "Initialization", "Check Path", {"path": str(base)}, "exists(path)", {}, "FALSE", "", "Fail", "", 0, "ERROR", "Path not found")
+        return
 
     if req.format == "yolo":
+        log_event(audit_id, "Parsing", "YOLO Dataset", {"path": str(base)}, "parse_yolo()", {}, "STARTED", "", "Parsing annotations", "", 0, "RUNNING")
         images_dir = base / "images"
         labels_dir = base / "labels"
         if not images_dir.exists():
             images_dir = base
             labels_dir = base
-        ds_result = inspect_yolo_dataset(images_dir, labels_dir)
+        
+        # We will need to pass audit_id to inspect_yolo_dataset
+        ds_result = inspect_yolo_dataset(images_dir, labels_dir, audit_id=audit_id)
         records = ds_result["records"]
-        findings: List[Dict[str, Any]] = [
-            check_duplicate_flooding(records),
-            check_data_poisoning(records),
-            check_trigger_patterns([images_dir / r["filename"] for r in records if (images_dir/r["filename"]).exists()]),
+        
+        raw_findings: List[Dict[str, Any]] = [
+            check_duplicate_flooding(records, audit_id=audit_id),
+            check_data_poisoning(records, audit_id=audit_id),
+            check_trigger_patterns([Path(r["path"]) for r in records if Path(r["path"]).exists()], audit_id=audit_id),
         ]
+        findings = [f for f in raw_findings if f["result"] != "PASS"]
         
         # Execute CleanVision adapter
         from src.integrations.cleanvision_adapter import run_cleanvision_checks
+        log_event(audit_id, "Quality Checks", "CleanVision", {"images_dir": str(images_dir)}, "cleanvision.detect()", {}, "STARTED", "", "Running pixel anomaly detection", "", 0, "RUNNING")
         cv_evidence = run_cleanvision_checks(str(images_dir), req.dataset_path)
         for e in cv_evidence:
             findings.append(e.to_dict())
+            
         summary = {
             "dataset_type": "YOLO",
             "total_images": ds_result["total_images"],
             "class_counts": ds_result["class_counts"],
         }
         for r in records:
-            r["url_path"] = str((images_dir / r["filename"]).relative_to(ROOT)).replace('\\', '/')
+            p = Path(r["path"])
+            r["url_path"] = str(p.relative_to(ROOT)).replace('\\', '/')
     elif req.format == "coco":
         ann_path = base / "annotations.json"
         if not ann_path.exists():
-            raise HTTPException(status_code=400, detail="annotations.json not found")
+            log_event(audit_id, "Initialization", "Check Path", {"path": str(ann_path)}, "exists(path)", {}, "FALSE", "", "Fail", "", 0, "ERROR", "annotations.json not found")
+            return
         images_dir = base / "images"
         if not images_dir.exists():
             images_dir = base
-        ds_result = inspect_coco_dataset(ann_path, images_dir)
-        findings = [] # You might want to add similar security checks for COCO images if needed
-        # We can add duplicate check for COCO too since records contains sha256
-        records = ds_result["records"]
-        if records:
-            findings.append(check_duplicate_flooding(records))
-            findings.append(check_data_poisoning(records))
-            findings.append(check_trigger_patterns([images_dir / r["filename"] for r in records if (images_dir/r["filename"]).exists()]))
             
-        # Execute CleanVision adapter
+        log_event(audit_id, "Parsing", "COCO Dataset", {"path": str(base)}, "parse_coco()", {}, "STARTED", "", "Parsing annotations", "", 0, "RUNNING")
+        ds_result = inspect_coco_dataset(ann_path, images_dir, audit_id=audit_id)
+        findings = [] 
+        records = ds_result["records"]
+        
+        if records:
+            raw_findings = [
+                check_duplicate_flooding(records, audit_id=audit_id),
+                check_data_poisoning(records, audit_id=audit_id),
+                check_trigger_patterns([Path(r["path"]) for r in records if Path(r["path"]).exists()], audit_id=audit_id)
+            ]
+            findings.extend([f for f in raw_findings if f["result"] != "PASS"])
+            
         from src.integrations.cleanvision_adapter import run_cleanvision_checks
+        log_event(audit_id, "Quality Checks", "CleanVision", {"images_dir": str(images_dir)}, "cleanvision.detect()", {}, "STARTED", "", "Running pixel anomaly detection", "", 0, "RUNNING")
         cv_evidence = run_cleanvision_checks(str(images_dir), req.dataset_path)
         for e in cv_evidence:
             findings.append(e.to_dict())
@@ -209,7 +263,7 @@ def audit_dataset(req: DatasetAuditRequest):
         summary = {
             "dataset_type": "COCO",
             "total_images": ds_result["total_images"],
-            "total_annotations": ds_result["total_annotations"],
+            "total_annotations": ds_result.get("total_annotations", 0),
             "class_counts": ds_result["class_counts"],
         }
         for r in records:
@@ -217,7 +271,8 @@ def audit_dataset(req: DatasetAuditRequest):
             if p.exists():
                 r["url_path"] = str(p.relative_to(ROOT)).replace('\\', '/')
     else:
-        raise HTTPException(status_code=400, detail=f"Unknown format: {req.format}")
+        log_event(audit_id, "Initialization", "Check Format", {"format": req.format}, "valid_format()", {}, "FALSE", "", "Fail", "", 0, "ERROR", "Unknown format")
+        return
 
     report = generate_report(
         dataset_findings=findings,
@@ -226,15 +281,8 @@ def audit_dataset(req: DatasetAuditRequest):
         target_name=req.dataset_path,
     )
     save_report(report, REPORTS_DIR / f"dataset_{report['report_id'][:8]}.json")
-
-    return {
-        "report_id": report["report_id"],
-        "verdict": report["verdict"],
-        "severity_summary": report["severity_summary"],
-        "findings": findings,
-        "dataset_summary": summary,
-        "records": ds_result.get("records", []), 
-    }
+    
+    log_event(audit_id, "Finalization", "Report Generation", {"report_id": report["report_id"]}, "generate_report()", {}, "COMPLETED", "", "Success", report["report_id"], 0, "PASS")
 
 # ---------------------------------------------------------------------------
 # Model audit
@@ -388,11 +436,11 @@ def audit_full(req: FullAuditRequest):
                 lbls = base
             ds_result = inspect_yolo_dataset(imgs, lbls)
             records = ds_result["records"]
-            all_ds_findings = [
+            all_ds_findings = [f for f in [
                 check_duplicate_flooding(records),
                 check_data_poisoning(records),
-                check_trigger_patterns([imgs / r["filename"] for r in records if (imgs/r["filename"]).exists()]),
-            ]
+                check_trigger_patterns([Path(r["path"]) for r in records if Path(r["path"]).exists()]),
+            ] if f["result"] != "PASS"]
             ds_summary = {"total_images": ds_result["total_images"],
                           "class_counts": ds_result["class_counts"]}
 
@@ -501,8 +549,8 @@ def serve_ui():
     html_path = UI_DIR / "index.html"
     if html_path.exists():
         content = html_path.read_text(encoding="utf-8")
-        content = content.replace('href="style.css"', 'href="/static/style.css"')
-        content = content.replace('src="app.js"', 'src="/static/app.js"')
+        content = content.replace('href="style.css"', f'href="/static/style.css?v={time.time()}"')
+        content = content.replace('src="app.js"', f'src="/static/app.js?v={time.time()}"')
         return HTMLResponse(content)
     return HTMLResponse("<h1>TRUSTTRACE CV</h1><p>UI not found.</p>")
 

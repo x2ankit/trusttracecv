@@ -145,7 +145,28 @@ def probe_trigger_sensitivity(model_id: str, model: Any, model_type: str, refere
                              f"Localization shift (1-IoU): {localization_change:.3f}",
                 limitations="Potential trigger-sensitive behavior; not sufficient by itself to establish a backdoor. "
                             "May be a general lack of robustness to occlusions or noise.",
-                recommended_action="REVIEW - Probe target classes and perform further robustness evaluation."
+                recommended_action="REVIEW - Probe target classes and perform further robustness evaluation.",
+                trace={
+                    "operation_id": "TRIGGER_PROBE_SENSITIVITY",
+                    "operation_type": "Synthetic Trigger Behavior Sensitivity Test",
+                    "formula": "prediction_change_rate = changed_images / total_images",
+                    "inputs": {
+                        "trigger_name": trigger["name"],
+                        "trigger_type": trigger.get("type", "unknown"),
+                        "total_images": total
+                    },
+                    "intermediate_values": {
+                        "changed_images": pred_change_count,
+                        "class_changed_images": class_change_count,
+                        "cumulative_confidence_diff": round(conf_diff_sum, 4),
+                        "localization_shift_avg": round(localization_change, 4)
+                    },
+                    "result": f"Pred Change: {prediction_change_rate*100:.1f}%, Class Change: {class_change_rate*100:.1f}%",
+                    "threshold": "> 40% (Pred), > 30% (Class), > 20% (Conf)",
+                    "comparison": f"{prediction_change_rate:.3f} > 0.40 OR {class_change_rate:.3f} > 0.30",
+                    "decision": "FLAGGED",
+                    "explanation": "Executes identical inference passes on original and triggered images. Compares outputs bounding box properties and class confidences. High sensitivity to small local patches is anomalous."
+                }
             )
             evidence_list.append(evidence)
         else:
@@ -160,7 +181,25 @@ def probe_trigger_sensitivity(model_id: str, model: Any, model_type: str, refere
                 confidence_basis="Stable output under trigger perturbations",
                 observations=f"No significant reaction to '{trigger['name']}'.",
                 limitations="Only a small, finite trigger dictionary is tested.",
-                recommended_action="None"
+                recommended_action="None",
+                trace={
+                    "operation_id": "TRIGGER_PROBE_SENSITIVITY",
+                    "operation_type": "Synthetic Trigger Behavior Sensitivity Test",
+                    "formula": "prediction_change_rate = changed_images / total_images",
+                    "inputs": {
+                        "trigger_name": trigger["name"],
+                        "total_images": total
+                    },
+                    "intermediate_values": {
+                        "changed_images": pred_change_count,
+                        "class_changed_images": class_change_count
+                    },
+                    "result": f"Pred Change: {prediction_change_rate*100:.1f}%",
+                    "threshold": "> 40% (Pred), > 30% (Class)",
+                    "comparison": f"{prediction_change_rate:.3f} <= 0.40",
+                    "decision": "PASSED",
+                    "explanation": "Model exhibits sufficient spatial stability and is unaffected by this specific localized synthetic trigger pattern."
+                }
             )
             evidence_list.append(evidence)
             
