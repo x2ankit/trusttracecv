@@ -300,6 +300,6 @@ class TestDataPoisoning:
             "std_r": 1, "std_g": 1, "std_b": 1,
         }})
         finding = check_data_poisoning(records, z_threshold=2.0)
-        assert finding["result"] == "ANOMALY_DETECTED"
+        assert finding["result"] == "STATISTICAL_SHIFT"
         assert any(f["filename"] == "poison.jpg"
                    for f in finding["evidence"]["flagged_images"])

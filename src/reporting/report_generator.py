@@ -103,7 +103,7 @@ def _overall_verdict(findings: List[Dict[str, Any]]) -> str:
     results = {f.get("result", "NOT ASSESSED") for f in findings}
     if "FAIL" in results:
         return "FAIL"
-    if "ANOMALY_DETECTED" in results:
+    if "ANOMALY_DETECTED" in results or "STATISTICAL_SHIFT" in results:
         return "ANOMALIES_DETECTED"
     return "PASS"
 

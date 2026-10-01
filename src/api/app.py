@@ -171,6 +171,12 @@ def audit_dataset(req: DatasetAuditRequest):
             check_data_poisoning(records),
             check_trigger_patterns([images_dir / r["filename"] for r in records if (images_dir/r["filename"]).exists()]),
         ]
+        
+        # Execute CleanVision adapter
+        from src.integrations.cleanvision_adapter import run_cleanvision_checks
+        cv_evidence = run_cleanvision_checks(str(images_dir), req.dataset_path)
+        for e in cv_evidence:
+            findings.append(e.to_dict())
         summary = {
             "dataset_type": "YOLO",
             "total_images": ds_result["total_images"],
@@ -193,6 +199,12 @@ def audit_dataset(req: DatasetAuditRequest):
             findings.append(check_duplicate_flooding(records))
             findings.append(check_data_poisoning(records))
             findings.append(check_trigger_patterns([images_dir / r["filename"] for r in records if (images_dir/r["filename"]).exists()]))
+            
+        # Execute CleanVision adapter
+        from src.integrations.cleanvision_adapter import run_cleanvision_checks
+        cv_evidence = run_cleanvision_checks(str(images_dir), req.dataset_path)
+        for e in cv_evidence:
+            findings.append(e.to_dict())
 
         summary = {
             "dataset_type": "COCO",
@@ -283,6 +295,25 @@ def audit_model(req: ModelAuditRequest):
             "limitation": "Requires original signing key.",
         }
     ]
+    
+    # Execute Upstream Integrations
+    from src.integrations.art_adapter import run_art_robustness_probe
+    from src.integrations.backdoorbench_adapter import run_backdoorbench_validation
+    from src.integrations.trojai_adapter import run_trojai_validation
+    from src.integrations.cosign_adapter import verify_cosign_signature
+    
+    art_ev = run_art_robustness_probe(req.model_path, None, record.get("format", "").lower())
+    for e in art_ev: findings.append(e.to_dict())
+    
+    bdb_ev = run_backdoorbench_validation(req.model_path, "")
+    for e in bdb_ev: findings.append(e.to_dict())
+    
+    trj_ev = run_trojai_validation(req.model_path, "trojai_metadata.json")
+    for e in trj_ev: findings.append(e.to_dict())
+    
+    if req.manifest_path:
+        cosign_ev = verify_cosign_signature(req.manifest_path, "public_key.pem", "manifest.sig", req.model_path)
+        for e in cosign_ev: findings.append(e.to_dict())
 
     report = generate_report(
         model_findings=findings,
@@ -397,6 +428,24 @@ def audit_full(req: FullAuditRequest):
             for rec in records_inf:
                 all_inf_findings.append(verify_inference_record(rec))
                 all_inf_findings.append(check_inference_replay(rec))
+                
+    # Execute Cleanlab integration
+    from src.integrations.cleanlab_adapter import run_cleanlab_object_detection
+    cl_labels = ds_result.get("records", []) if req.dataset_path else []
+    cl_preds = records_inf if req.inference_log else []
+    if cl_labels and cl_preds:
+        cl_ev = run_cleanlab_object_detection(req.dataset_path, cl_labels, cl_preds)
+        for e in cl_ev: all_ds_findings.append(e.to_dict())
+        
+    # Execute In-toto Integration
+    from src.integrations.intoto_adapter import InTotoEvidenceChain, generate_intoto_evidence
+    chain = InTotoEvidenceChain()
+    if req.dataset_path: chain.add_link("dataset_audit", {"dataset": req.dataset_path}, {}, "audit_dataset")
+    if req.model_path: chain.add_link("model_verification", {"model": req.model_path}, {}, "audit_model")
+    if req.inference_log: chain.add_link("inference", {"log": req.inference_log}, {}, "audit_inference")
+    
+    intoto_ev = generate_intoto_evidence(chain, "full_audit")
+    for e in intoto_ev: all_inf_findings.append(e.to_dict())
 
     report = generate_report(
         dataset_findings=all_ds_findings,
@@ -425,6 +474,19 @@ def audit_full(req: FullAuditRequest):
 @app.get("/api/coverage")
 def get_coverage():
     return COVERAGE
+
+# ---------------------------------------------------------------------------
+# Provenance chain verify endpoint
+# ---------------------------------------------------------------------------
+from src.inference.provenance import verify_provenance_chain
+
+@app.post("/api/provenance/verify-chain")
+def verify_chain():
+    is_valid, msg, anomalies = verify_provenance_chain()
+    if is_valid:
+        return {"status": "valid", "message": msg, "anomalies": anomalies}
+    else:
+        return {"status": "invalid", "message": msg, "anomalies": anomalies}
 
 # ---------------------------------------------------------------------------
 # Static UI

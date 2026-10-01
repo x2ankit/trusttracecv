@@ -101,11 +101,22 @@ def evaluate_object_detection_performance(
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
         
-        # calculate per class precision and recall
+        # calculate per class precision, recall, and AP approximation
+        ap_sum = 0.0
+        classes_with_gt = 0
         for c, stats in per_class_stats.items():
             ctp, cfp, cfn = stats["tp"], stats["fp"], stats["fn"]
-            stats["precision"] = ctp / (ctp + cfp) if (ctp + cfp) > 0 else 0.0
-            stats["recall"] = ctp / (ctp + cfn) if (ctp + cfn) > 0 else 0.0
+            c_prec = ctp / (ctp + cfp) if (ctp + cfp) > 0 else 0.0
+            c_rec = ctp / (ctp + cfn) if (ctp + cfn) > 0 else 0.0
+            stats["precision"] = c_prec
+            stats["recall"] = c_rec
+            # Simplified AP: just using Precision * Recall as a proxy area if we don't have PR curve
+            stats["ap"] = c_prec * c_rec 
+            if (ctp + cfn) > 0:
+                ap_sum += stats["ap"]
+                classes_with_gt += 1
+                
+        mAP = ap_sum / classes_with_gt if classes_with_gt > 0 else 0.0
             
         report["thresholds"][str(iou_thresh)] = {
             "TP": tp,
@@ -113,6 +124,7 @@ def evaluate_object_detection_performance(
             "FN": fn,
             "precision": precision,
             "recall": recall,
+            "mAP": mAP,
             "per_class": per_class_stats,
             "matched_object_count": tp,
             "missed_object_count": fn,

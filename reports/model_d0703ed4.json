@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0.0",
+  "report_id": "d0703ed4-778f-4ff7-af34-b104dbabbfc0",
+  "generated_at": "2026-09-30T21:19:03Z",
+  "target_name": "models/fixtures/dummy_detector.pt",
+  "audit_seed": 42,
+  "system_info": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_version": "3.12.14 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:37:13) [MSC v.1942 64 bit (AMD64)]",
+    "hostname": "DESKTOP-7P9LG10"
+  },
+  "verdict": "PASS",
+  "severity_summary": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 2
+  },
+  "findings_count": 2,
+  "sections": {
+    "dataset": {
+      "summary": {},
+      "findings": []
+    },
+    "models": {
+      "summary": {
+        "filename": "dummy_detector.pt",
+        "sha256": "c5c7ff87acf9f324a6fb180d8ecf20d3df0c39d341ec07326c90448d39e7dabe",
+        "format": "PyTorch",
+        "size_bytes": 3208
+      },
+      "findings": [
+        {
+          "check_id": "SEC-MDL-001",
+          "name": "Model Substitution / Integrity Check",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "result": "PASS",
+            "detail": "SHA-256 matches reference manifest",
+            "expected": "c5c7ff87acf9f324a6fb180d8ecf20d3df0c39d341ec07326c90448d39e7dabe",
+            "actual": "c5c7ff87acf9f324a6fb180d8ecf20d3df0c39d341ec07326c90448d39e7dabe"
+          },
+          "description": "SHA-256 matches reference manifest",
+          "recommended_action": "No action required.",
+          "limitation": "Hash confirms identity, not safety."
+        },
+        {
+          "check_id": "SEC-MDL-002",
+          "name": "Model Structural Validation",
+          "result": "PASS",
+          "severity": "INFO",
+          "confidence": "HIGH",
+          "evidence": {
+            "metadata": {
+              "load_type": "state_dict",
+              "keys": [
+                "features.0.weight",
+                "features.0.bias",
+                "classifier.weight",
+                "classifier.bias"
+              ],
+              "torchscript": false,
+              "error": null,
+              "total_keys": 4
+            }
+          },
+          "description": "Model loaded successfully.",
+          "recommended_action": "No action required.",
+          "limitation": "Loading does not verify semantic correctness."
+        }
+      ]
+    },
+    "inference": {
+      "findings": []
+    }
+  },
+  "coverage": {
+    "implemented": [
+      "SEC-DS-001: Duplicate flooding detection (SHA-256, exact match)",
+      "SEC-DS-002: Label flipping detection (vs reference annotations)",
+      "SEC-DS-003: Trigger pattern insertion (patch entropy heuristic)",
+      "SEC-DS-004: Data poisoning via statistical outlier (Z-score on pixel stats)",
+      "SEC-DS-005: OOD insertion via Mahalanobis distance on pixel distribution",
+      "SEC-MDL-001: Model substitution / integrity via SHA-256 manifest",
+      "SEC-MDL-002: Model structural validation (loadability, format, metadata)",
+      "SEC-INF-001: Inference record tamper verification (HMAC-SHA256)",
+      "SEC-INF-002: Inference replay detection (payload hash deduplication)",
+      "SEC-INF-003: Backdoor-like behaviour indicator (confidence threshold)",
+      "Dataset inspection: YOLO format (image, resolution, labels, bounding boxes)",
+      "Dataset inspection: COCO format (annotations JSON, category distribution)"
+    ],
+    "partial": [
+      "ONNX model inspection (requires onnx package; checker may fail on non-standard models)",
+      "TorchScript loading (falls back gracefully; graph semantics not verified)",
+      "Label flipping (requires trusted reference; if absent \u2192 NOT ASSESSED)",
+      "Trigger detection (heuristic only; low confidence; sophisticated triggers may evade)"
+    ],
+    "unsupported": [
+      "Universal backdoor detection (not mathematically feasible via static analysis alone)",
+      "Semantic correctness of model weights",
+      "Real-time streaming inference monitoring",
+      "Near-duplicate image detection (perceptual hashing)",
+      "Adversarial robustness evaluation (requires inference budget)",
+      "Attribution / membership inference attacks"
+    ],
+    "assumptions": [
+      "Dataset is provided in standard COCO or YOLO format.",
+      "Model files are in PyTorch (.pt/.pth), TorchScript (.pt), or ONNX (.onnx) format.",
+      "Inference records are produced by record_inference() or conform to that schema.",
+      "A trusted reference annotation set exists for label-flipping detection.",
+      "A reference manifest (SHA-256 per model file) exists for substitution detection."
+    ],
+    "known_limitations": [
+      "Statistical anomaly detection (Z-score, Mahalanobis, entropy) produces probabilistic signals; false positives and false negatives are expected.",
+      "SHA-256 matching confirms file identity, NOT model safety.",
+      "Trigger pattern search is entropy-based and cannot detect sophisticated textured triggers.",
+      "HMAC signature verification requires the original signing key.",
+      "Replay detection can be evaded by modifying any non-critical record field.",
+      "Backdoor-like behaviour indicator (high confidence) cannot distinguish legitimate high confidence from triggered behaviour without ground truth.",
+      "All checks assume honest and complete input data. Adversarially crafted inputs that comply with the expected format may not be detected."
+    ]
+  },
+  "confidence_basis": "Deterministic checks (hash comparison, HMAC verification, exact duplicate detection) carry HIGH confidence. Statistical checks (Z-score, Mahalanobis distance, entropy) carry LOW to MEDIUM confidence and require human review. All anomaly findings represent candidates for investigation, not confirmed attacks.",
+  "limitations_summary": [
+    "Statistical anomaly detection (Z-score, Mahalanobis, entropy) produces probabilistic signals; false positives and false negatives are expected.",
+    "SHA-256 matching confirms file identity, NOT model safety.",
+    "Trigger pattern search is entropy-based and cannot detect sophisticated textured triggers.",
+    "HMAC signature verification requires the original signing key.",
+    "Replay detection can be evaded by modifying any non-critical record field.",
+    "Backdoor-like behaviour indicator (high confidence) cannot distinguish legitimate high confidence from triggered behaviour without ground truth.",
+    "All checks assume honest and complete input data. Adversarially crafted inputs that comply with the expected format may not be detected."
+  ],
+  "recommended_actions": []
+}

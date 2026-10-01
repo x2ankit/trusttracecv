@@ -78,7 +78,8 @@ class TestManifest:
         loaded = load_manifest(manifest_path)
         assert "hmac_sig" in loaded
         from src.models.integrity import verify_manifest
-        assert verify_manifest(loaded) is True
+        is_valid, _ = verify_manifest(loaded)
+        assert is_valid is True
         assert loaded["m.bin"] == manifest["m.bin"]
 
     def test_missing_file_excluded(self, tmp_path):

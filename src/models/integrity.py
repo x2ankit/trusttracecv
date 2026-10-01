@@ -22,7 +22,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -48,19 +48,45 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 def sign_manifest(manifest: Dict[str, str], secret: bytes = _MANIFEST_SECRET) -> Dict[str, str]:
-    clean_manifest = {k: v for k, v in manifest.items() if k != "hmac_sig"}
+    clean_manifest = {k: v for k, v in manifest.items() if k not in ("hmac_sig", "rsa_sig")}
     payload_bytes = json.dumps(clean_manifest, sort_keys=True).encode()
     hmac_sig = hmac.new(secret, payload_bytes, hashlib.sha256).hexdigest()
     clean_manifest["hmac_sig"] = hmac_sig
     return clean_manifest
 
-def verify_manifest(manifest: Dict[str, str], secret: bytes = _MANIFEST_SECRET) -> bool:
-    if "hmac_sig" not in manifest:
-        return False
-    clean_manifest = {k: v for k, v in manifest.items() if k != "hmac_sig"}
+def verify_manifest(manifest: Dict[str, str], secret: bytes = _MANIFEST_SECRET, public_key_path: Optional[Path] = None) -> Tuple[bool, str]:
+    """Verifies manifest using RSA asymmetric signature if available, fallback to HMAC."""
+    clean_manifest = {k: v for k, v in manifest.items() if k not in ("hmac_sig", "rsa_sig")}
     payload_bytes = json.dumps(clean_manifest, sort_keys=True).encode()
-    expected_sig = hmac.new(secret, payload_bytes, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(manifest["hmac_sig"], expected_sig)
+    
+    if "rsa_sig" in manifest and public_key_path and public_key_path.exists():
+        try:
+            from cryptography.hazmat.primitives.asymmetric import padding
+            from cryptography.hazmat.primitives import hashes
+            from cryptography.hazmat.primitives import serialization
+            import base64
+            
+            with open(public_key_path, "rb") as key_file:
+                public_key = serialization.load_pem_public_key(key_file.read())
+            
+            signature = base64.b64decode(manifest["rsa_sig"])
+            public_key.verify(
+                signature,
+                payload_bytes,
+                padding.PKCS1v15(),
+                hashes.SHA256()
+            )
+            return True, "ASYMMETRIC"
+        except Exception as e:
+            logger.error(f"RSA signature verification failed: {e}")
+            return False, "ASYMMETRIC"
+            
+    if "hmac_sig" in manifest:
+        expected_sig = hmac.new(secret, payload_bytes, hashlib.sha256).hexdigest()
+        is_valid = hmac.compare_digest(manifest["hmac_sig"], expected_sig)
+        return is_valid, "HMAC"
+        
+    return False, "NONE"
 
 def build_manifest(model_paths: List[Path]) -> Dict[str, str]:
     """Build a {filename: sha256} manifest for the given model files."""
@@ -266,18 +292,21 @@ def inspect_model(
 
     # --- Integrity comparison vs manifest ---
     if reference_manifest is not None:
-        if "hmac_sig" in reference_manifest:
-            sig_valid = verify_manifest(reference_manifest)
+        if "hmac_sig" in reference_manifest or "rsa_sig" in reference_manifest:
+            # Check if there is a public key available for this project
+            pub_key_path = Path(os.environ.get("TRUSTTRACE_PUBLIC_KEY", "public_key.pem"))
+            sig_valid, sig_type = verify_manifest(reference_manifest, public_key_path=pub_key_path)
+            
             if not sig_valid:
                 record["checks"]["manifest_integrity"] = {
                     "result": "FAIL",
                     "severity": "CRITICAL",
-                    "detail": "Manifest HMAC signature is invalid. The manifest may have been tampered with."
+                    "detail": f"Manifest {sig_type} signature is invalid. The manifest may have been tampered with."
                 }
             else:
                 record["checks"]["manifest_integrity"] = {
                     "result": "PASS",
-                    "detail": "Manifest HMAC signature verified."
+                    "detail": f"Manifest {sig_type} signature verified."
                 }
         else:
             record["checks"]["manifest_integrity"] = {

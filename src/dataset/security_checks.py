@@ -366,12 +366,12 @@ def check_data_poisoning(
     result = "PASS"
     severity = "INFO"
     if flagged:
-        result = "ANOMALY_DETECTED"
+        result = "STATISTICAL_SHIFT"
         severity = "MEDIUM"
 
     return {
         "check_id": "SEC-DS-004",
-        "name": "Data Poisoning (Statistical Outlier)",
+        "name": "Distribution Shift (Statistical Outlier)",
         "result": result,
         "severity": severity,
         "confidence": "LOW",

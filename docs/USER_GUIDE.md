@@ -10,13 +10,13 @@ Start the server:
 conda activate mldl
 python run_server.py
 ```
-Then navigate to `http://127.0.0.1:8000`.
+Then navigate to `http://127.0.0.1:8001`.
 
 ### Dashboard Panels
-- **Dataset Inspection:** Enter the path to your dataset (YOLO or COCO) to scan for label anomalies, duplicate flooding, and backdoor triggers.
-- **Model Identity:** Enter the path to your `.pt` or `.onnx` model and its corresponding `manifest.json` to verify structural integrity and cryptographically confirm it hasn't been substituted.
+- **Dataset Inspection:** Upload your dataset (YOLO or COCO in `.zip`) to scan for label anomalies, duplicate flooding, and backdoor triggers.
+- **Model Identity:** Enter the path to your `.pt` or `.onnx` model and its corresponding `manifest.json` to verify structural integrity and cryptographically confirm it hasn't been substituted. Uses offline RSA/Cosign signatures.
 - **Inference Verification:** Enter the path to your inference log (`.jsonl`) to cryptographically verify HMAC signatures and detect replay attacks or tamper events.
-- **Assurance Report:** Execute a full end-to-end pipeline audit and generate a structured JSON report mapping all findings to severity and confidence levels.
+- **Assurance Report:** Execute a full end-to-end pipeline audit. Generates an `in-toto` chain, runs `Cleanlab` label analysis, calculates CV Performance (AP/mAP), extracts Behavioral Fingerprints, and generates a structured JSON report.
 
 ## 2. Command Line Interface (CLI)
 
@@ -51,7 +51,8 @@ python -m src.cli audit-all \
 All findings output a standardized result:
 - `PASS`: The artifact is cryptographically and statistically sound.
 - `ANOMALY_DETECTED`: A statistical anomaly (like an out-of-distribution pixel set) or a duplicate cluster was found. Requires human analyst review.
+- `STATISTICAL_SHIFT`: Specifically for dataset pixel distributions (Data Poisoning).
 - `FAIL`: A deterministic integrity violation occurred (e.g., hash mismatch, broken signature). The artifact is compromised.
-- `NOT ASSESSED`: A check was skipped because the necessary metadata was unavailable (e.g., missing manifest).
+- `NOT ASSESSED`: A check was skipped because the necessary metadata was unavailable (e.g., missing manifest, missing upstream dependencies like BackdoorBench or TrojAI).
 
-*Always refer to the Confidence and Recommended Actions provided in the Assurance Report before making operational decisions.*
+*Always refer to the Confidence and Recommended Actions provided in the Assurance Report before making operational decisions. This tool does not claim universal backdoor detection, perfect model accuracy, or perfect security.*

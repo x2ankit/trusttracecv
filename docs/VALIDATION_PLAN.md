@@ -16,19 +16,25 @@ python -m pytest tests/ -v
 - **Exact Duplicates:** Confirms SHA-256 duplicate clusters are caught based on threshold.
 - **Missing Images:** Validates missing reference files yield `FAIL`.
 - **Label Flipping:** Verifies candidate class distributions against ground truth references.
-- **Data Poisoning (Z-Score):** Verifies anomalous RGB pixel distributions are caught.
-- **Trigger Patterns (Entropy):** Verifies zero-entropy patches (e.g., solid BMP patches) on noisy backgrounds trigger an anomaly flag.
+- **Distribution Shift (Data Poisoning):** Verifies anomalous RGB pixel distributions are caught using Z-scores, yielding `STATISTICAL_SHIFT`.
+- **Trigger Patterns (Entropy):** Verifies zero-entropy patches on noisy backgrounds trigger an anomaly flag.
 
-### 2. Model Integrity (3 Scenarios)
-- **Manifest Matching:** Ensures an unaltered model perfectly aligns with its declared SHA-256 in the manifest.
-- **Substitution Detection:** Modifying one byte in the model artifact correctly triggers an `ANOMALY_DETECTED` via digest mismatch.
-- **Format Structure:** Confirms valid `.pt` and `.onnx` files successfully load structurally (without executing code), and corrupted formats trigger `FAIL`.
+### 2. Model Integrity & Behavioral Fingerprinting (5 Scenarios)
+- **Manifest Matching:** Ensures an unaltered model perfectly aligns with its declared SHA-256.
+- **Asymmetric Signature Verification (Cosign / RSA):** Validates offline cryptographic signature verification of the manifest.
+- **Substitution Detection:** Modifying one byte in the model artifact correctly triggers `ANOMALY_DETECTED`.
+- **Format Structure:** Confirms valid `.pt` and `.onnx` files successfully load structurally (without executing code).
+- **Behavioral Fingerprinting:** Analyzes structural outputs and extracts reliable behavioral statistics dynamically without modifying weights.
 
-### 3. Inference Provenance (3 Scenarios)
+### 3. Inference Provenance (4 Scenarios)
 - **Canonical Serialization & Hash:** Ensures dictionary key ordering does not alter payload hash identity.
 - **HMAC Signatures:** Confirms valid secrets successfully verify the payload, and flipped bits in the log trigger `FAIL`.
 - **Replay Detection:** Confirms identical transaction IDs appearing multiple times correctly trigger `ANOMALY_DETECTED`.
+- **In-toto Chain Verification:** Cryptographically validates log chains for sequence correctness.
+
+### 4. CV Performance
+- **Metrics Validation:** Validates True Positives, False Positives, False Negatives, and AP/mAP correctness.
 
 ## Status
 - **Coverage:** 100% of defined modules
-- **Count:** 77/77 tests passing (Pytest)
+- **Count:** 81/81 tests passing (Pytest)
