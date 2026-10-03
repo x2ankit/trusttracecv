@@ -6,7 +6,7 @@
     <img src="https://img.shields.io/badge/PYTHON-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
     <img src="https://img.shields.io/badge/FASTAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
     <img src="https://img.shields.io/badge/SQLITE-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
-    <img src="https://img.shields.io/badge/JAVASCRIPT-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript">
+    <img src="https://img.shields.io/badge/NUMPY-013243?style=for-the-badge&logo=numpy&logoColor=white" alt="NumPy">
     <img src="https://img.shields.io/badge/PYTEST-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest">
   </p>
 
@@ -36,12 +36,12 @@ TRUSTTRACE CV is an offline-first, model-agnostic assurance pipeline designed sp
 ## Technology Stack and Frameworks
 
 The system is built entirely using open-source, offline-capable technologies:
-* **Backend**: Python 3.10+, FastAPI, Uvicorn
+* **Core Logic**: Python 3.10+
+* **API Layer**: FastAPI, Uvicorn
 * **Database**: SQLite3 (for append-only audit event logging)
-* **Frontend**: Vanilla HTML5, CSS3, JavaScript (ES6)
-* **Testing**: Pytest
 * **Data Processing**: NumPy, Pillow (PIL), JSON parsing libraries
 * **Cryptography**: built-in `hashlib`, `hmac`
+* **Testing**: Pytest
 
 ## System Architecture
 
