@@ -1,6 +1,19 @@
-# TRUSTTRACE CV
+<div align="center">
+  <h1>🛡️ TRUSTTRACE CV</h1>
+  <p><strong>Offline-First Integrity Assurance for Computer Vision Assets</strong></p>
 
-TRUSTTRACE CV is an offline-first, model-agnostic assurance pipeline designed specifically to secure the computer vision machine learning lifecycle. It delivers deterministic cryptographic verification and advanced statistical heuristics to protect training data, model artifacts, and inference records from tampering, poisoning, and supply-chain attacks.
+  <p>
+    <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+    <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
+    <img src="https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
+    <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript">
+    <img src="https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest">
+  </p>
+
+  <i>TRUSTTRACE CV is an offline-first, model-agnostic assurance pipeline designed specifically to secure the computer vision machine learning lifecycle. It delivers deterministic cryptographic verification and advanced statistical heuristics to protect training data, model artifacts, and inference records from tampering, poisoning, and supply-chain attacks.</i>
+</div>
+
+<br/>
 
 ## Technology Stack and Frameworks
 
@@ -145,5 +158,19 @@ For deep dives into methodologies, constraints, and architecture:
 Below is a preview of the TRUSTTRACE CV Dataset Assurance Dashboard in action.
 
 <div align="center">
-  <img src="assets/ui.png" alt="TRUSTTRACE CV UI Screenshot" width="800">
+  <img src="assets/ui.png" alt="TRUSTTRACE CV UI Screenshot" width="800" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+---
+
+<div align="center">
+  <h2>📜 License</h2>
+  <p>
+    This project is licensed under the <strong>MIT License</strong>.
+    <br/>
+    See the <a href="LICENSE">LICENSE</a> file for full details.
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/License-MIT-success?style=for-the-badge" alt="License: MIT">
+  </p>
 </div>
