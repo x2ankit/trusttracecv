@@ -1,17 +1,35 @@
 <div align="center">
   <h1>🛡️ TRUSTTRACE CV</h1>
-  <p><strong>Offline-First Integrity Assurance for Computer Vision Assets</strong></p>
+  <h3>Offline-First Integrity Assurance for Computer Vision Assets</h3>
 
   <p>
-    <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-    <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
-    <img src="https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
-    <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript">
-    <img src="https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest">
+    <img src="https://img.shields.io/badge/PYTHON-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+    <img src="https://img.shields.io/badge/FASTAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
+    <img src="https://img.shields.io/badge/SQLITE-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
+    <img src="https://img.shields.io/badge/JAVASCRIPT-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript">
+    <img src="https://img.shields.io/badge/PYTEST-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest">
   </p>
 
-  <i>TRUSTTRACE CV is an offline-first, model-agnostic assurance pipeline designed specifically to secure the computer vision machine learning lifecycle. It delivers deterministic cryptographic verification and advanced statistical heuristics to protect training data, model artifacts, and inference records from tampering, poisoning, and supply-chain attacks.</i>
+  <p>
+    <img src="https://img.shields.io/badge/status-active%20development-brightgreen" alt="Status">
+    <img src="https://img.shields.io/badge/version-v1.0%20%E2%80%94%20production%20ready-blue" alt="Version">
+    <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="License">
+    <img src="https://img.shields.io/badge/PRs-welcome-blueviolet" alt="PRs Welcome">
+  </p>
+
+  <p>
+    🚀 <a href="#quickstart-guide">Quickstart</a> &nbsp;•&nbsp; 
+    🏗️ <a href="#system-architecture">Architecture</a> &nbsp;•&nbsp; 
+    🧪 <a href="#testing">Testing</a> &nbsp;•&nbsp; 
+    🧰 <a href="#technology-stack-and-frameworks">Tech Stack</a>
+  </p>
 </div>
+
+<br/>
+
+## 📖 Overview
+
+TRUSTTRACE CV is an offline-first, model-agnostic assurance pipeline designed specifically to secure the computer vision machine learning lifecycle. It delivers deterministic cryptographic verification and advanced statistical heuristics to protect training data, model artifacts, and inference records from tampering, poisoning, and supply-chain attacks.
 
 <br/>
 
