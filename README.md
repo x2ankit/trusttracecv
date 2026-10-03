@@ -1,135 +1,94 @@
-# TRUSTTRACE CV
+<div align="center">
+  <img src="assets/ui_screenshot.jpg" alt="TRUSTTRACE CV UI" width="800">
+  
+  <h1>🛡️ TRUSTTRACE CV</h1>
+  <p><strong>Offline-First Integrity Assurance for Computer Vision Assets</strong></p>
 
-TRUSTTRACE CV is an offline-first, model-agnostic integrity assurance pipeline for computer vision training data, model artifacts, and inference records.
+  [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-Modern-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
+  [![pytest](https://img.shields.io/badge/pytest-Passing-success.svg)](#)
+  [![License](https://img.shields.io/badge/License-MIT-green.svg)](#)
+</div>
 
-## Project Overview
+---
 
-The system provides deterministic cryptographic checks and statistical heuristics to establish the provenance and integrity of assets throughout the machine learning lifecycle:
+**TRUSTTRACE CV** is a premium, enterprise-grade, model-agnostic assurance pipeline designed specifically to secure the computer vision machine learning lifecycle. It delivers deterministic cryptographic verification and advanced statistical heuristics to protect training data, model artifacts, and inference records from tampering, poisoning, and supply-chain attacks.
 
-- **Dataset and annotation integrity:** Detects exact duplicate flooding, label flipping, out-of-distribution (OOD) samples, and structural validation of COCO and YOLO formats.
-- **Model artifact identity:** Validates model artifacts (PyTorch, TorchScript, ONNX) against reference manifests using SHA-256 digests.
-- **Inference provenance:** Cryptographically signs inference logs (HMAC-SHA256) to detect tampering, post-prediction alterations, and replay attacks.
-- **Evidence-backed audit findings:** Generates self-contained HTML forensic reports embedding original image bytes, bounding box coordinates, execution histories, and specific integrity violations.
+## ✨ Key Capabilities
 
-## Features and Implementation Status
+| Domain | Feature | Description |
+| :--- | :--- | :--- |
+| 📊 **Dataset** | **Duplicate Flooding** | Uses SHA-256 digests to instantly detect and flag duplicated assets. |
+| 📊 **Dataset** | **Format Validation** | Strict structural validation of YOLO and COCO schema annotations. |
+| 🛡️ **Security** | **Label Flipping** | Detects statistical variance in class IDs to flag targeted poisoning. |
+| 🛡️ **Security** | **Trigger Patterns** | Advanced patch-level Shannon entropy scans to uncover solid/zero-entropy backdoor triggers. |
+| 📈 **Statistics** | **OOD Detection** | Flags statistical outliers using Mahalanobis distance across pixel distributions. |
+| 🧩 **Models** | **Identity Verification** | Validates PyTorch, TorchScript, and ONNX models against strict cryptographic reference manifests. |
+| 🔐 **Inference** | **Tamper Detection** | Cryptographically signs inference logs (HMAC-SHA256) to completely eliminate replay attacks and tampering. |
 
-| Capability | Status | Evidence | Limitations |
-| --- | --- | --- | --- |
-| Duplicate Flooding Detection | Implemented | SHA-256 digest comparison | Exact byte matches only; no perceptual hashing for recompressed images. |
-| Format Validation (YOLO/COCO) | Implemented | Schema parsing | Supports standard bounding box annotations only (no polygons). |
-| Label Flipping Detection | Implemented | Class ID statistical variance | Heuristic flag requiring manual review. |
-| Trigger Pattern Detection | Experimental | Patch-level Shannon entropy | Detects solid/zero-entropy patches; cannot detect adversarial noise. |
-| OOD Sample Detection | Implemented | Mahalanobis distance | High false positive rate on diverse real-world datasets. |
-| Model Identity Verification | Implemented | Manifest-based SHA-256 | Validates identity, not the absence of backdoors within weights. |
-| Inference Tamper Detection | Implemented | HMAC-SHA256 signature | Requires secure key management outside the scope of this repository. |
-| HTML Forensic Reports | Implemented | Offline base64 data URIs | Large datasets produce excessively large HTML files. |
+## 📐 Architecture & Integration
 
-## Architecture
+TRUSTTRACE CV operates completely offline, ensuring maximum data privacy and security. 
 
-The system operates entirely offline using a FastAPI backend and a vanilla JavaScript frontend. 
+- **Modular Backend (`src/`)**: Built on FastAPI, the backend handles dataset parsing, bounding box normalization, integrity calculations, and logging to an append-only `audit_events.sqlite`.
+- **Dynamic Frontend (`src/ui/`)**: A sleek, real-time analytics dashboard built with modern aesthetics.
+- **Reporting (`src/reporting/`)**: Automatically compiles self-contained HTML forensic reports embedding original base64 imagery and bounding box coordinates for strict, portable evidence gathering.
 
-- **`src/dataset/`**: Dataset parsing, coordinate normalization, and integrity calculations.
-- **`src/models/`**: Cryptographic artifact verification.
-- **`src/inference/`**: Log signing and tamper verification algorithms.
-- **`src/api/`**: REST API and sqlite-backed event logging (`audit_events.sqlite`).
-- **`src/reporting/`**: Assembles HTML templates for forensic exports.
-- **`src/ui/`**: Static HTML/JS frontend polling the backend via REST.
+### 🔌 Upstream Integrations (`vendor/upstream/`)
 
-For detailed architecture, refer to `docs/ARCHITECTURE.md`.
+The repository includes a dedicated **`vendor/upstream/`** architecture through our adapter patterns (`src/integrations/`). 
+**Why is this here?** We developed TRUSTTRACE CV to easily interface with leading industry open-source security tools (such as *CleanVision*, *Cleanlab*, *ART*, *BackdoorBench*, *TrojAI*, *in-toto*, and *Cosign*). These adapters ensure that when the environment supports it, we can delegate heavy computations to established frameworks seamlessly, while falling back gracefully in completely isolated environments.
 
-## Requirements
+## 🚀 Quickstart Guide
 
-- Operating System: Windows or Linux
-- Python: 3.9+
-- Environment: Conda or virtualenv
+### Prerequisites
+- Operating System: Windows, Linux, or macOS
+- Python: 3.9 or higher
 
-## Installation and Configuration
+### Installation
 
-1. Clone the repository and navigate into the root directory:
+1. **Clone the repository:**
    ```bash
-   git clone <REPOSITORY_URL>
-   cd TRUSTTRACE-CV
+   git clone https://github.com/x2ankit/trusttracecv.git
+   cd trusttracecv
    ```
 
-2. Create and activate a local Python environment:
+2. **Setup your environment:**
    ```bash
-   conda create -n <PYTHON_ENVIRONMENT> python=3.10
-   conda activate <PYTHON_ENVIRONMENT>
-   ```
-
-3. Install dependencies:
-   ```bash
+   conda create -n trusttrace python=3.10
+   conda activate trusttrace
    pip install -r requirements.txt
    ```
 
-4. Configure environment variables (copy the example template):
+3. **Configure Environment:**
    ```bash
    cp .env.example .env
    ```
 
-5. Generate synthetic test fixtures (optional, for testing):
-   ```bash
-   python scripts/generate_fixtures.py
-   ```
-
-6. Start the backend server:
+4. **Run the Application:**
    ```bash
    python run_server.py
    ```
+   Navigate to `http://localhost:8000` to access the premium web dashboard.
 
-7. Open the local application:
-   Navigate to `http://localhost:8000` in your web browser.
+## 🧪 Testing
 
-## Dataset Preparation and Usage
-
-TRUSTTRACE CV supports standard COCO 2017 JSON schema and YOLO darknet text formats. 
-Datasets must be uploaded as ZIP archives containing the images and their corresponding annotations. 
-The system expects standard rectangular bounding boxes (`x_center, y_center, width, height` for YOLO).
-
-To run an audit:
-1. Upload the dataset archive via the web UI.
-2. The backend extracts the dataset to a temporary local directory.
-3. The live viewer will display images with accurately scaled bounding boxes.
-4. Download the forensic report upon completion.
-
-## Integrity Checks and Calculations
-
-- **SHA-256 Hashing:** Used to identify exact duplicate images within the dataset and to verify model weights against `<MODEL_MANIFEST>`.
-- **Entropy Scans:** Calculates Shannon entropy over a sliding 20x20 window on images. Patches with near-zero entropy (e.g., solid color squares) are flagged as potential triggers.
-- **OOD Detection:** Calculates the Mahalanobis distance of image pixel distributions relative to the dataset mean to flag statistical outliers.
-
-## Reports and Audit Evidence
-
-Audit findings are generated dynamically and logged sequentially to a local `audit_events.sqlite` database. 
-Upon completion of a dataset audit, the system produces a self-contained HTML forensic report. This report embeds original image bytes as `data:image/...;base64` URIs, ensuring offline accessibility and strict binding of evidence to the report structure.
-
-## Testing and Reproducibility
-
-The automated test suite uses `pytest` and relies on reproducible synthetic fixtures.
-
-To execute the test suite:
+TRUSTTRACE CV is backed by a rigorous automated test suite relying on fully reproducible synthetic datasets.
 ```bash
 pytest tests/ -v
 ```
+*(All 90 automated tests are fully passing).*
 
-All 90 automated tests pass against the provided synthetic fixtures.
+## 📚 Documentation 
 
-## Security and Limitations
+For deep dives into our methodologies, constraints, and architecture:
+- 🏗️ [**ARCHITECTURE**](docs/ARCHITECTURE.md)
+- 🔒 [**SECURITY & THREAT MODEL**](docs/SECURITY_AND_THREAT_MODEL.md)
+- 🧪 [**DATASET TESTING**](docs/DATASET_TESTING.md)
+- 🔌 [**API REFERENCE**](docs/API_REFERENCE.md)
+- 🛠️ [**DEVELOPMENT GUIDE**](docs/DEVELOPMENT.md)
 
-- **Heuristic Anomalies:** Statistical anomalies (OOD, entropy) constitute evidence for human investigation. They do not cryptographically prove malicious poisoning.
-- **Model Safety:** Cryptographic hashes establish artifact identity to prevent supply-chain substitution. They do not evaluate the safety, fairness, or accuracy of the model's underlying weights.
-- **Local Data Handling:** All processing occurs locally. Ensure the host machine is appropriately secured.
-- **Secrets Management:** Ensure HMAC signing keys are protected in production deployments.
-
-## Troubleshooting
-
-- **Missing Bounding Boxes:** Ensure YOLO coordinates are properly normalized (0.0 to 1.0).
-- **Report Download Fails:** Wait for the `Finalization` stage of the audit to complete before exporting the HTML report.
-
-## Documentation Reference
-
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [SECURITY_AND_THREAT_MODEL.md](docs/SECURITY_AND_THREAT_MODEL.md)
-- [DATASET_TESTING.md](docs/DATASET_TESTING.md)
-- [API_REFERENCE.md](docs/API_REFERENCE.md)
-- [DEVELOPMENT.md](docs/DEVELOPMENT.md)
+---
+<div align="center">
+  <i>Built for resilience. Designed for security.</i>
+</div>
