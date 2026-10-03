@@ -41,7 +41,6 @@ TRUSTTRACE CV
 │   ├── generate_fixtures.py
 │   └── demo_behavior.py
 ├── tests/                # 88+ automated pytest cases
-├── vendor/upstream/      # Cloned upstream reference repositories (isolated)
 └── docs/                 # Comprehensive documentation
 ```
 

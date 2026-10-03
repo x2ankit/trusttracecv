@@ -34,10 +34,9 @@ TRUSTTRACE CV operates completely offline, ensuring maximum data privacy and sec
 - **Dynamic Frontend (`src/ui/`)**: A sleek, real-time analytics dashboard built with modern aesthetics.
 - **Reporting (`src/reporting/`)**: Automatically compiles self-contained HTML forensic reports embedding original base64 imagery and bounding box coordinates for strict, portable evidence gathering.
 
-### 🔌 Upstream Integrations (`vendor/upstream/`)
+### 🔌 Extensibility (`src/integrations/`)
 
-The repository includes a dedicated **`vendor/upstream/`** architecture through our adapter patterns (`src/integrations/`). 
-**Why is this here?** We developed TRUSTTRACE CV to easily interface with leading industry open-source security tools (such as *CleanVision*, *Cleanlab*, *ART*, *BackdoorBench*, *TrojAI*, *in-toto*, and *Cosign*). These adapters ensure that when the environment supports it, we can delegate heavy computations to established frameworks seamlessly, while falling back gracefully in completely isolated environments.
+We developed TRUSTTRACE CV with an **Adapter Pattern** (`src/integrations/`) to easily interface with leading industry open-source security tools (such as *CleanVision*, *Cleanlab*, *ART*, *BackdoorBench*, *TrojAI*, *in-toto*, and *Cosign*). These adapters ensure that when the environment supports it, we can delegate heavy computations to established frameworks seamlessly via their Python APIs, while falling back gracefully in completely offline or isolated environments without bloating the core repository.
 
 ## 🚀 Quickstart Guide
 
