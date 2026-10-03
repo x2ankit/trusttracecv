@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=20261002-02">
 </head>
 <body>
   <!-- HEADER -->
@@ -41,18 +41,108 @@
         <div class="panel-heading">IMAGE INSPECTION</div>
         <div class="panel-body flex-col">
           <!-- Upload Bar -->
-          <div class="upload-bar">
-             <input type="file" id="ds-file-input" accept=".zip" hidden>
-             <button class="btn btn-primary" onclick="document.getElementById('ds-file-input').click()">Browse Dataset ZIP</button>
-             <div id="ds-upload-meta" hidden class="meta-info">
-               <span id="topbar-ds-name" class="font-medium"></span>
-               <span id="ds-meta-filename" class="text-gray text-sm ml-2"></span>
-               <select id="ds-meta-format" class="input-select-sm ml-auto">
-                 <option value="yolo">YOLO (Auto-detected)</option>
-                 <option value="coco">COCO (Override)</option>
-               </select>
-             </div>
+          <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <input type="file" id="ds-file-input" accept=".zip,.ZIP" style="display:none;"
+                onchange="__ttUpload(this)">
+              <label for="ds-file-input" class="btn btn-primary" style="cursor:pointer; white-space:nowrap;">📂 Browse Dataset ZIP</label>
+              <select id="ds-meta-format" class="input-select-sm">
+                <option value="yolo">YOLO (Auto-detected)</option>
+                <option value="coco">COCO (Override)</option>
+              </select>
+              <span id="ds-meta-filename" style="font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+              <span id="topbar-ds-name" style="display:none;"></span>
+              <div id="ds-upload-meta" style="display:none;"></div>
+            </div>
+            <!-- Progress bar -->
+            <div id="ds-upload-progress-wrap" style="display:none;flex-direction:column;gap:4px;">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;">
+                <span id="ds-upload-label">Uploading…</span>
+                <span id="ds-upload-stats" style="font-family:monospace;"></span>
+              </div>
+              <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                <div id="ds-upload-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#2563eb,#7c3aed);border-radius:3px;transition:width 0.15s ease;"></div>
+              </div>
+            </div>
           </div>
+          <!-- INLINE upload handler — works even with cached app.js -->
+          <script>
+          function __ttUpload(inp) {
+            var file = inp.files[0]; if (!file) return;
+            var statusEl = document.getElementById('ds-meta-filename');
+            var wrapEl   = document.getElementById('ds-upload-progress-wrap');
+            var barEl    = document.getElementById('ds-upload-bar');
+            var labelEl  = document.getElementById('ds-upload-label');
+            var statsEl  = document.getElementById('ds-upload-stats');
+            wrapEl.style.display  = 'flex';
+            barEl.style.width     = '0%';
+            barEl.style.background= 'linear-gradient(90deg,#2563eb,#7c3aed)';
+            statusEl.textContent  = '\uD83D\uDCE6 ' + file.name + '  (' + (file.size/1048576).toFixed(1) + ' MB)';
+            statusEl.style.color  = '#64748b';
+            labelEl.textContent   = 'Connecting\u2026';
+            statsEl.textContent   = '';
+
+            var fmt = document.getElementById('ds-meta-format');
+            var fd  = new FormData();
+            fd.append('file', file);
+            fd.append('format', fmt ? fmt.value : 'yolo');
+
+            var xhr       = new XMLHttpRequest();
+            var t0        = Date.now(), tLast = t0, bLast = 0;
+
+            xhr.upload.onprogress = function(ev) {
+              if (!ev.lengthComputable) return;
+              var pct   = ev.loaded / ev.total * 100;
+              var now   = Date.now();
+              var dt    = (now - tLast) / 1000;
+              var spd   = dt > 0 ? (ev.loaded - bLast) / dt : 0;
+              var eta   = spd > 0 ? (ev.total - ev.loaded) / spd : 0;
+              tLast = now; bLast = ev.loaded;
+              var spdStr = spd>=1048576 ? (spd/1048576).toFixed(1)+' MB/s' : (spd/1024).toFixed(0)+' KB/s';
+              var etaStr = eta > 0 ? '  ETA '+eta.toFixed(0)+'s' : '';
+              var doneStr= (ev.loaded/1048576).toFixed(1)+' / '+(ev.total/1048576).toFixed(1)+' MB';
+              barEl.style.width    = pct.toFixed(1)+'%';
+              labelEl.textContent  = 'Uploading\u2026 '+pct.toFixed(0)+'%';
+              statsEl.textContent  = doneStr+'  \u2022  '+spdStr+etaStr;
+            };
+
+            xhr.onload = function() {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                var data = JSON.parse(xhr.responseText);
+                window.uploadedDatasetPath = data.dataset_path;
+                var elapsed = ((Date.now()-t0)/1000).toFixed(1);
+                var avg = file.size/((Date.now()-t0)/1000);
+                var avgStr = avg>=1048576?(avg/1048576).toFixed(1)+' MB/s':(avg/1024).toFixed(0)+' KB/s';
+                barEl.style.width     = '100%';
+                barEl.style.background= '#10b981';
+                labelEl.textContent   = '\u2705 Done in '+elapsed+'s';
+                statsEl.textContent   = 'Avg '+avgStr+'  \u2022  '+(file.size/1048576).toFixed(1)+' MB';
+                statusEl.textContent  = '\u2705 '+file.name+' \u2014 ready to audit';
+                statusEl.style.color  = '#10b981';
+                var btn = document.getElementById('btn-start-audit');
+                if (btn) btn.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.45)';
+              } else {
+                var msg = 'HTTP '+xhr.status;
+                try { msg = JSON.parse(xhr.responseText).detail || msg; } catch(e){}
+                barEl.style.background= '#ef4444';
+                labelEl.textContent   = '\u274c Upload failed';
+                statsEl.textContent   = msg;
+                statusEl.textContent  = '\u274c '+msg;
+                statusEl.style.color  = '#ef4444';
+              }
+            };
+            xhr.onerror = function() {
+              barEl.style.background = '#ef4444';
+              labelEl.textContent    = '\u274c Network error';
+              statusEl.textContent   = '\u274c Cannot reach server';
+              statusEl.style.color   = '#ef4444';
+            };
+            xhr.open('POST', '/api/upload/dataset');
+            xhr.send(fd);
+          }
+          </script>
+
+
           
           <div class="viewer-header mt-4">
             <span id="viewer-filename" class="font-mono font-medium">No Image Selected</span>
@@ -172,6 +262,6 @@
     </div>
   </footer>
   
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20261003-report-fixed-2"></script>
 </body>
 </html>

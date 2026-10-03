@@ -1,4 +1,8 @@
 
+// Null-safe element getter — prevents addEventListener(null, ...) crashes
+function el(id) { return document.getElementById(id); }
+function safeOn(id, event, fn) { const e = el(id); if (e) e.addEventListener(event, fn); }
+
 document.querySelectorAll('.app-tabs .tab-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
     document.querySelectorAll('.app-tabs .tab-btn').forEach(b => b.classList.remove('active'));
@@ -75,37 +79,96 @@ function closeDrawer() {
   document.getElementById('drawer-overlay').classList.remove('open');
 }
 
-document.getElementById('drawer-close').addEventListener('click', closeDrawer);
-document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+safeOn('drawer-close', 'click', closeDrawer);
+safeOn('drawer-overlay', 'click', closeDrawer);
 
 // --- Dataset Audit ---
-document.getElementById('ds-file-input').addEventListener('change', async (e) => {
+safeOn('ds-file-input', 'change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  
+  console.log('[TRUSTTRACE] File selected:', file.name, file.size, 'bytes');
+
+  const statusEl  = document.getElementById('ds-meta-filename');
+  const wrapEl    = document.getElementById('ds-upload-progress-wrap');
+  const barEl     = document.getElementById('ds-upload-bar');
+  const labelEl   = document.getElementById('ds-upload-label');
+  const statsEl   = document.getElementById('ds-upload-stats');
+
+  // Show progress row
+  if (wrapEl)   { wrapEl.style.display = 'flex'; }
+  if (barEl)    { barEl.style.width = '0%'; barEl.style.background = 'linear-gradient(90deg,#2563eb,#7c3aed)'; }
+  if (statusEl) { statusEl.textContent = `📦 ${file.name}  (${(file.size/1048576).toFixed(1)} MB)`; statusEl.style.color = '#64748b'; }
+  if (labelEl)  { labelEl.textContent = 'Connecting…'; }
+  if (statsEl)  { statsEl.textContent = ''; }
+
+  const fmt = document.getElementById('ds-meta-format');
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('format', document.getElementById('ds-meta-format').value);
-  
-  document.getElementById('ds-upload-meta').hidden = false;
-  document.getElementById('ds-meta-filename').textContent = file.name;
-  
-  try {
-    const r = await fetch(`${API_BASE}/api/upload/dataset`, { method: 'POST', body: formData });
-    if (!r.ok) {
-        const errorData = await r.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Upload failed');
+  formData.append('format', fmt ? fmt.value : 'yolo');
+
+  const xhr = new XMLHttpRequest();
+  const startTime = Date.now();
+  let lastLoaded = 0, lastTime = startTime;
+
+  xhr.upload.addEventListener('progress', (ev) => {
+    if (!ev.lengthComputable) return;
+    const pct      = (ev.loaded / ev.total) * 100;
+    const now      = Date.now();
+    const dt       = (now - lastTime) / 1000;           // seconds since last event
+    const delta    = ev.loaded - lastLoaded;             // bytes since last event
+    const speed    = dt > 0 ? delta / dt : 0;           // bytes/sec
+    const remaining = speed > 0 ? (ev.total - ev.loaded) / speed : 0;
+    lastLoaded = ev.loaded; lastTime = now;
+
+    const fmtSpeed = speed >= 1048576 ? `${(speed/1048576).toFixed(1)} MB/s`
+                   : speed >= 1024    ? `${(speed/1024).toFixed(0)} KB/s`
+                   :                    `${speed.toFixed(0)} B/s`;
+    const fmtEta   = remaining > 0    ? `  ETA ${remaining.toFixed(0)}s` : '';
+    const fmtDone  = `${(ev.loaded/1048576).toFixed(1)} / ${(ev.total/1048576).toFixed(1)} MB`;
+
+    if (barEl)   { barEl.style.width = `${pct.toFixed(1)}%`; }
+    if (labelEl) { labelEl.textContent = `Uploading… ${pct.toFixed(0)}%`; }
+    if (statsEl) { statsEl.textContent = `${fmtDone}  •  ${fmtSpeed}${fmtEta}`; }
+  });
+
+  xhr.addEventListener('load', () => {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      const data = JSON.parse(xhr.responseText);
+      window.uploadedDatasetPath = data.dataset_path;
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      const avgSpeed = file.size / ((Date.now() - startTime) / 1000);
+      const fmtAvg = avgSpeed >= 1048576 ? `${(avgSpeed/1048576).toFixed(1)} MB/s` : `${(avgSpeed/1024).toFixed(0)} KB/s`;
+
+      if (barEl)    { barEl.style.width = '100%'; barEl.style.background = '#10b981'; }
+      if (labelEl)  { labelEl.textContent = `✅ Upload complete in ${elapsed}s`; }
+      if (statsEl)  { statsEl.textContent = `Avg ${fmtAvg}  •  ${(file.size/1048576).toFixed(1)} MB`; }
+      if (statusEl) { statusEl.textContent = `✅ ${file.name} — ready to audit`; statusEl.style.color = '#10b981'; }
+
+      const runBtn = document.getElementById('btn-start-audit');
+      if (runBtn) { runBtn.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.5)'; }
+      console.log('[TRUSTTRACE] Upload OK →', data.dataset_path);
+    } else {
+      let msg = `HTTP ${xhr.status}`;
+      try { msg = JSON.parse(xhr.responseText).detail || msg; } catch(e2) {}
+      if (barEl)    { barEl.style.background = '#ef4444'; }
+      if (labelEl)  { labelEl.textContent = `❌ Upload failed`; }
+      if (statsEl)  { statsEl.textContent = msg; }
+      if (statusEl) { statusEl.textContent = `❌ ${msg}`; statusEl.style.color = '#ef4444'; }
     }
-    const data = await r.json();
-    document.getElementById('topbar-ds-name').textContent = `Dataset: ${file.name}`;
-    window.uploadedDatasetPath = data.dataset_path;
-  } catch (err) {
-    document.getElementById('ds-meta-filename').textContent = `Error: ${err.message}`;
-    document.getElementById('ds-meta-filename').style.color = 'var(--danger)';
-  }
+  });
+
+  xhr.addEventListener('error', () => {
+    if (barEl)   { barEl.style.background = '#ef4444'; }
+    if (labelEl) { labelEl.textContent = '❌ Network error'; }
+    if (statusEl){ statusEl.textContent = '❌ Network error — is the server running?'; statusEl.style.color = '#ef4444'; }
+  });
+
+  xhr.open('POST', '/api/upload/dataset');
+  xhr.send(formData);
 });
 
-document.getElementById('btn-start-audit').addEventListener('click', async () => {
+
+safeOn('btn-start-audit', 'click', async () => {
   if (!window.uploadedDatasetPath) {
     alert("Please upload a dataset file first!");
     return;
@@ -146,6 +209,23 @@ document.getElementById('btn-start-audit').addEventListener('click', async () =>
     
     const intv = setInterval(async () => {
       try {
+        if (!currentState.datasetAuditData || !currentState.datasetAuditData.records) {
+            try {
+                const recRes = await fetch(`${API_BASE}/api/audit/records/${auditId}`);
+                if (recRes.ok) {
+                    const recs = await recRes.json();
+                    currentState.datasetAuditData = { records: recs, findings: [] };
+                    const strip = document.getElementById('thumbnail-strip');
+                    if (strip) {
+                        strip.innerHTML = recs.slice(0, 50).map((r, i) => {
+                            return `<img src="${API_BASE}/api/image?path=${encodeURIComponent(r.url_path)}" class="thumb" onclick="viewSample(${i})" id="thumb-${i}">`;
+                        }).join('');
+                    }
+                    if (recs.length > 0) viewSample(0);
+                }
+            } catch(e) {}
+        }
+        
         const rs = await fetch(`${API_BASE}/api/audit/events/${auditId}`);
         if (rs.ok) {
           const eventsData = await rs.json();
@@ -166,7 +246,7 @@ document.getElementById('btn-start-audit').addEventListener('click', async () =>
               const isWarn = ev.status_code === 'WARNING';
               const color = isPass ? 'var(--pass)' : (isErr ? 'var(--danger)' : (isWarn ? 'var(--warning)' : 'var(--text-color)'));
               
-              histLine.innerHTML = `<span class="text-gray">[${ts}]</span> <span style="color:var(--primary)">${ev.check_name}</span>: ${ev.observation_type} = <span style="color:${color}">${ev.status_code}</span>`;
+              histLine.innerHTML = `<span class="text-gray">[${ts}]</span> <span style="color:var(--primary)">${ev.check_name}</span>: <span style="color:#e2e8f0">${ev.observation_type}</span> = <span style="color:${color}">${ev.status_code}</span>`;
               document.getElementById('ds-event-history').appendChild(histLine);
               
               // Update live calc
@@ -178,6 +258,22 @@ document.getElementById('btn-start-audit').addEventListener('click', async () =>
                     <div class="text-gray mt-1">Inputs: ${inputs}</div>
                     <div class="mt-1">Result: ${ev.result_str}</div>
                  `;
+                 
+                 // Update live image viewer if file is present in inputs
+                 if (ev.inputs && ev.inputs.file) {
+                    const fname = ev.inputs.file;
+                    if (currentState.datasetAuditData && currentState.datasetAuditData.records) {
+                        const idx = currentState.datasetAuditData.records.findIndex(r => r.filename === fname);
+                        if (idx >= 0) {
+                            viewSample(idx);
+                        }
+                    } else {
+                        document.getElementById('viewer-filename').textContent = "Processing: " + fname;
+                        document.getElementById('dt-id').textContent = fname;
+                        const viewer = document.getElementById('bbox-viewer');
+                        viewer.innerHTML = `<img src="${API_BASE}/api/image/find?dataset_path=${encodeURIComponent(window.uploadedDatasetPath)}&filename=${encodeURIComponent(fname)}" class="viewer-img" style="display: block; width: 100%; height: 100%; object-fit: contain;">`;
+                    }
+                 }
               }
               
               if (ev.status_code === 'ERROR') isError = true;
@@ -197,24 +293,9 @@ document.getElementById('btn-start-audit').addEventListener('click', async () =>
                  document.getElementById('ds-current-op').textContent = 'Audit Finished';
              }
              
-             // Auto download JSONL
              document.getElementById('btn-export-jsonl').disabled = false;
              document.getElementById('btn-export-json').disabled = false;
              
-             try {
-                const blob = new Blob([eventsData.events.map(e => JSON.stringify(e)).join('\\n')], { type: 'application/x-ndjson' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `trusttrace_audit_${auditId}_${new Date().toISOString().replace(/[:.]/g,'-')}.jsonl`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-             } catch(e) {
-                console.error("Auto-download blocked", e);
-             }
-             
-             // Fetch the final report to populate the findings table
              try {
                  const rep_res = await fetch(`${API_BASE}/api/reports`);
                  if (rep_res.ok) {
@@ -222,6 +303,27 @@ document.getElementById('btn-start-audit').addEventListener('click', async () =>
                      if (reports.length > 0) {
                          const latest = reports[0];
                          renderDatasetResults(latest);
+                         
+                         // Auto-download the full execution record
+                         const fullRecord = {
+                             audit_id: auditId,
+                             timestamp: new Date().toISOString(),
+                             dataset_summary: latest,
+                             execution_events: eventsData.events,
+                             findings: latest.findings || [],
+                             final_status: (latest.findings || []).length > 0 ? "ISSUES DETECTED" : "PASS",
+                             limitations: "This audit is based on static and heuristic analysis. It does not replace dynamic manual verification.",
+                             software_configuration: { version: "1.0.0", engine: "TrustTrace CV" }
+                         };
+                         
+                         const blob = new Blob([JSON.stringify(fullRecord, null, 2)], { type: 'application/json' });
+                         const url = URL.createObjectURL(blob);
+                         const a = document.createElement('a');
+                         a.href = url;
+                         a.download = `trusttrace_audit_${auditId}.json`;
+                         document.body.appendChild(a);
+                         a.click();
+                         document.body.removeChild(a);
                      }
                  }
              } catch (e) { console.error(e); }
@@ -231,6 +333,15 @@ document.getElementById('btn-start-audit').addEventListener('click', async () =>
     }, 500);
 
     // Setup manual download buttons
+    document.getElementById('btn-export-json').onclick = () => {
+        const a = document.createElement('a');
+        a.href = `${API_BASE}/api/reports/html/${auditId}`;
+        a.download = `trusttrace_audit_${auditId}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
     document.getElementById('btn-export-jsonl').onclick = async () => {
         const rs = await fetch(`${API_BASE}/api/audit/events/${auditId}`);
         const evs = await rs.json();
@@ -249,8 +360,6 @@ document.getElementById('btn-start-audit').addEventListener('click', async () =>
       document.getElementById('topbar-status').textContent = 'FAILED';
       document.getElementById('topbar-status').className = 'topbar-status badge fail';
     }
-  }
-
   }
 });
 
@@ -539,7 +648,7 @@ function viewFinding(idx, type) {
 }
 
 // --- Model Audit ---
-document.getElementById('btn-audit-model').addEventListener('click', async () => {
+safeOn('btn-audit-model', 'click', async () => {
   const modelPath = document.getElementById('mdl-path').value;
   const manifestPath = document.getElementById('mdl-manifest').value;
   if (!modelPath) return;
@@ -581,7 +690,7 @@ document.getElementById('btn-audit-model').addEventListener('click', async () =>
 });
 
 // --- Inference Audit ---
-document.getElementById('btn-audit-inference').addEventListener('click', async () => {
+safeOn('btn-audit-inference', 'click', async () => {
   const logPath = document.getElementById('inf-log').value;
   if (!logPath) return;
 
@@ -614,7 +723,7 @@ document.getElementById('btn-audit-inference').addEventListener('click', async (
 });
 
 // --- Report ---
-document.getElementById('btn-full-audit').addEventListener('click', async () => {
+safeOn('btn-full-audit', 'click', async () => {
   const body = {
     dataset_path: document.getElementById('rep-ds').value || null,
     model_path: document.getElementById('rep-mdl').value || null,

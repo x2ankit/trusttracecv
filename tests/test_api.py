@@ -113,3 +113,52 @@ def test_full_audit():
     assert "findings" in data
     assert "dataset_records" in data
     assert "inference_records" in data
+
+def test_get_audit_records():
+    # Trigger an audit and wait for it
+    req = {
+        "dataset_path": "data/fixtures/clean",
+        "format": "yolo",
+        "seed": 42
+    }
+    r = client.post("/api/audit/dataset", json=req)
+    assert r.status_code == 200
+    audit_id = r.json()["audit_id"]
+    
+    import time
+    for _ in range(20):
+        rr = client.get(f"/api/audit/records/{audit_id}")
+        if rr.status_code == 200:
+            records = rr.json()
+            assert isinstance(records, list)
+            assert len(records) > 0
+            assert "filename" in records[0]
+            return
+        time.sleep(0.5)
+    assert False, "Records file was not generated within timeout"
+
+def test_html_report_generation():
+    req = {
+        "dataset_path": "data/fixtures/clean",
+        "format": "yolo",
+        "seed": 42
+    }
+    r = client.post("/api/audit/dataset", json=req)
+    assert r.status_code == 200
+    audit_id = r.json()["audit_id"]
+    
+    import time
+    for _ in range(60):
+        rr = client.get(f"/api/audit/events/{audit_id}")
+        if rr.status_code == 200:
+            events = rr.json().get("events", [])
+            if any(e.get("check_name") == "Finalization" and e.get("status_code") == "PASS" for e in events):
+                break
+        time.sleep(0.5)
+        
+    r_html = client.get(f"/api/reports/html/{audit_id}")
+    assert r_html.status_code == 200
+    content = r_html.text
+    assert "<!DOCTYPE html>" in content
+    assert "data:image/jpeg;base64," in content or "data:image/jpg;base64," in content or "data:image/png;base64," in content
+    assert audit_id in content

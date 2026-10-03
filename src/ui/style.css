@@ -1,11 +1,12 @@
-
 :root {
   --bg-main: #f8fafc;
   --bg-panel: #ffffff;
   --bg-header: #0f172a;
   --bg-footer: #ffffff;
+  --bg-surface: #f1f5f9;
   
   --text-main: #1e293b;
+  --text-color: #1e293b;
   --text-gray: #64748b;
   --text-light: #f8fafc;
   
@@ -16,9 +17,20 @@
   --color-pass: #10b981;
   --color-fail: #ef4444;
   --color-review: #f59e0b;
+
+  /* Aliases used by JS */
+  --pass:    #10b981;
+  --danger:  #ef4444;
+  --warning: #f59e0b;
+  --info:    #3b82f6;
   
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(37,99,235,0);  }
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

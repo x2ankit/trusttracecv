@@ -143,6 +143,40 @@ def get_image(path: str):
         raise HTTPException(403, "Access denied.")
     return FileResponse(p)
 
+@app.get("/api/audit/records/{audit_id}")
+def get_audit_records(audit_id: str):
+    p = REPORTS_DIR / f"records_{audit_id}.json"
+    if p.exists():
+        with open(p, "r", encoding="utf-8") as f:
+            return json.load(f)
+    raise HTTPException(404, "Records not found")
+
+@app.get("/api/reports/html/{audit_id}")
+def download_html_report(audit_id: str):
+    try:
+        from src.reporting.html_generator import generate_offline_html_report
+        html_content = generate_offline_html_report(audit_id)
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse(content=html_content, status_code=200, headers={
+            "Content-Disposition": f'attachment; filename="trusttrace_audit_{audit_id}.html"'
+        })
+    except Exception as e:
+        logger.exception("Failed to generate HTML report")
+        raise HTTPException(500, str(e))
+
+@app.get("/api/image/find")
+def find_image(dataset_path: str, filename: str):
+    dataset_dir = ROOT / urllib.parse.unquote(dataset_path)
+    if not dataset_dir.exists():
+        raise HTTPException(404, "Dataset directory not found.")
+    
+    # Try finding the file recursively
+    for p in dataset_dir.rglob(filename):
+        if p.is_file():
+            return FileResponse(p)
+            
+    raise HTTPException(404, "Image not found.")
+
 # ---------------------------------------------------------------------------
 # Health & Status
 # ---------------------------------------------------------------------------
@@ -210,6 +244,12 @@ def run_dataset_audit_task(req: DatasetAuditRequest):
         ds_result = inspect_yolo_dataset(images_dir, labels_dir, audit_id=audit_id)
         records = ds_result["records"]
         
+        for r in records:
+            p = Path(r["path"])
+            r["url_path"] = str(p.relative_to(ROOT)).replace('\\', '/')
+        with open(REPORTS_DIR / f"records_{audit_id}.json", "w", encoding="utf-8") as f:
+            json.dump(records, f)
+            
         raw_findings: List[Dict[str, Any]] = [
             check_duplicate_flooding(records, audit_id=audit_id),
             check_data_poisoning(records, audit_id=audit_id),
@@ -229,9 +269,6 @@ def run_dataset_audit_task(req: DatasetAuditRequest):
             "total_images": ds_result["total_images"],
             "class_counts": ds_result["class_counts"],
         }
-        for r in records:
-            p = Path(r["path"])
-            r["url_path"] = str(p.relative_to(ROOT)).replace('\\', '/')
     elif req.format == "coco":
         ann_path = base / "annotations.json"
         if not ann_path.exists():
@@ -247,6 +284,13 @@ def run_dataset_audit_task(req: DatasetAuditRequest):
         records = ds_result["records"]
         
         if records:
+            for r in records:
+                p = Path(r["path"])
+                if p.exists():
+                    r["url_path"] = str(p.relative_to(ROOT)).replace('\\', '/')
+            with open(REPORTS_DIR / f"records_{audit_id}.json", "w", encoding="utf-8") as f:
+                json.dump(records, f)
+                
             raw_findings = [
                 check_duplicate_flooding(records, audit_id=audit_id),
                 check_data_poisoning(records, audit_id=audit_id),
@@ -266,10 +310,6 @@ def run_dataset_audit_task(req: DatasetAuditRequest):
             "total_annotations": ds_result.get("total_annotations", 0),
             "class_counts": ds_result["class_counts"],
         }
-        for r in records:
-            p = Path(r["path"])
-            if p.exists():
-                r["url_path"] = str(p.relative_to(ROOT)).replace('\\', '/')
     else:
         log_event(audit_id, "Initialization", "Check Format", {"format": req.format}, "valid_format()", {}, "FALSE", "", "Fail", "", 0, "ERROR", "Unknown format")
         return
@@ -280,7 +320,8 @@ def run_dataset_audit_task(req: DatasetAuditRequest):
         audit_seed=req.seed,
         target_name=req.dataset_path,
     )
-    save_report(report, REPORTS_DIR / f"dataset_{report['report_id'][:8]}.json")
+    report["records"] = records
+    save_report(report, REPORTS_DIR / f"dataset_{audit_id}.json")
     
     log_event(audit_id, "Finalization", "Report Generation", {"report_id": report["report_id"]}, "generate_report()", {}, "COMPLETED", "", "Success", report["report_id"], 0, "PASS")
 

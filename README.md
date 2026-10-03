@@ -1,148 +1,135 @@
 # TRUSTTRACE CV
 
-An offline-first, model-agnostic assurance system for computer vision training data, model artifacts, and inference records. Developed for SIH problem statement SIH26228.
+TRUSTTRACE CV is an offline-first, model-agnostic integrity assurance pipeline for computer vision training data, model artifacts, and inference records.
 
-## Overview
+## Project Overview
 
-TRUSTTRACE CV provides reproducible, evidence-backed security checks covering:
+The system provides deterministic cryptographic checks and statistical heuristics to establish the provenance and integrity of assets throughout the machine learning lifecycle:
 
-- Dataset integrity: YOLO and COCO format inspection, duplicate flooding, label flipping, trigger pattern insertion, and OOD sample detection.
-- Model integrity: SHA-256 identity verification, manifest-based substitution detection, structural validation for PyTorch, TorchScript, and ONNX artifacts.
-- Inference provenance: HMAC-SHA256 signed records, tamper detection, replay detection, and backdoor-like behaviour indicators.
-- Assurance reports: structured JSON reports with verdict, severity summary, confidence basis, recommended actions, and known limitations.
-- Professional web UI: light-themed interface with dataset image grid, annotation overlay, findings tables, and full assurance report view.
+- **Dataset and annotation integrity:** Detects exact duplicate flooding, label flipping, out-of-distribution (OOD) samples, and structural validation of COCO and YOLO formats.
+- **Model artifact identity:** Validates model artifacts (PyTorch, TorchScript, ONNX) against reference manifests using SHA-256 digests.
+- **Inference provenance:** Cryptographically signs inference logs (HMAC-SHA256) to detect tampering, post-prediction alterations, and replay attacks.
+- **Evidence-backed audit findings:** Generates self-contained HTML forensic reports embedding original image bytes, bounding box coordinates, execution histories, and specific integrity violations.
 
-## SIH26228 Requirement Mapping
+## Features and Implementation Status
 
-| SIH Requirement | Source Module | Tests | Evidence |
+| Capability | Status | Evidence | Limitations |
 | --- | --- | --- | --- |
-| Dataset inspection (filename, resolution, labels, bounding boxes) | `src/dataset/inspector.py` | `tests/test_dataset.py` | Image grid in UI; records in reports |
-| Suspicious data findings | `src/dataset/security_checks.py` | `tests/test_dataset.py` | SEC-DS-001 through SEC-DS-005 findings |
-| Model identity and integrity checks | `src/models/integrity.py` | `tests/test_models.py` | SEC-MDL-001, SEC-MDL-002 findings |
-| Inference record verification | `src/inference/verifier.py` | `tests/test_inference.py` | SEC-INF-001, SEC-INF-002, SEC-INF-003 |
-| Evidence-backed assurance reports | `src/reporting/report_generator.py` | `tests/test_report.py` | JSON reports in `reports/` |
-| Coverage and limitations | `src/reporting/report_generator.py` | `tests/test_report.py` | `COVERAGE` dict; `/api/coverage` endpoint |
-| Professional light-themed UI | `src/ui/` | Manual / browser | Served at `http://localhost:8000` |
-| CLI reproduction | `src/cli.py` | Manual | See CLI Usage below |
-
-## Supported Threat Scenarios
-
-| Check ID | Threat | Method | Confidence |
-| --- | --- | --- | --- |
-| SEC-DS-001 | Duplicate flooding | SHA-256 exact hash grouping | HIGH (deterministic) |
-| SEC-DS-002 | Label flipping | Class ID comparison vs reference | HIGH (deterministic) |
-| SEC-DS-003 | Trigger pattern insertion | Patch-level Shannon entropy | LOW (heuristic) |
-| SEC-DS-004 | Data poisoning | Z-score on pixel statistics | LOW (statistical) |
-| SEC-DS-005 | OOD insertion | Mahalanobis distance on pixel distribution | MEDIUM (statistical) |
-| SEC-MDL-001 | Model substitution | SHA-256 vs reference manifest | HIGH (deterministic) |
-| SEC-MDL-002 | Model structural validation | Format load check | HIGH (deterministic) |
-| SEC-INF-001 | Inference tampering | HMAC-SHA256 signature verification | HIGH (deterministic) |
-| SEC-INF-002 | Inference replay | Payload hash deduplication | HIGH (deterministic) |
-| SEC-INF-003 | Backdoor-like behaviour | Confidence threshold indicator | LOW (heuristic) |
+| Duplicate Flooding Detection | Implemented | SHA-256 digest comparison | Exact byte matches only; no perceptual hashing for recompressed images. |
+| Format Validation (YOLO/COCO) | Implemented | Schema parsing | Supports standard bounding box annotations only (no polygons). |
+| Label Flipping Detection | Implemented | Class ID statistical variance | Heuristic flag requiring manual review. |
+| Trigger Pattern Detection | Experimental | Patch-level Shannon entropy | Detects solid/zero-entropy patches; cannot detect adversarial noise. |
+| OOD Sample Detection | Implemented | Mahalanobis distance | High false positive rate on diverse real-world datasets. |
+| Model Identity Verification | Implemented | Manifest-based SHA-256 | Validates identity, not the absence of backdoors within weights. |
+| Inference Tamper Detection | Implemented | HMAC-SHA256 signature | Requires secure key management outside the scope of this repository. |
+| HTML Forensic Reports | Implemented | Offline base64 data URIs | Large datasets produce excessively large HTML files. |
 
 ## Architecture
 
-```
-TRUSTTRACE CV
-├── src/
-│   ├── dataset/
-│   │   ├── inspector.py          YOLO and COCO format inspection, OOD detection
-│   │   └── security_checks.py    Duplicate, label-flip, trigger, poisoning checks
-│   ├── models/
-│   │   └── integrity.py          SHA-256, manifest, PyTorch/ONNX loading
-│   ├── inference/
-│   │   └── verifier.py           HMAC signing, tamper/replay detection
-│   ├── reporting/
-│   │   └── report_generator.py   Assurance report assembly, coverage statement
-│   ├── api/
-│   │   └── app.py                FastAPI backend
-│   ├── ui/
-│   │   ├── index.html            Light-themed web UI
-│   │   ├── style.css
-│   │   └── app.js
-│   └── cli.py                    Command-line interface
-├── tests/                        Reproducible pytest test suite
-├── scripts/
-│   └── generate_fixtures.py      Deterministic synthetic fixture generator
-├── data/fixtures/                Synthetic test datasets (git-ignored)
-├── models/fixtures/              Synthetic test models (git-ignored)
-├── reports/                      Generated assurance reports (git-ignored)
-└── run_server.py                 Server startup script
-```
+The system operates entirely offline using a FastAPI backend and a vanilla JavaScript frontend. 
 
-## Setup Instructions
+- **`src/dataset/`**: Dataset parsing, coordinate normalization, and integrity calculations.
+- **`src/models/`**: Cryptographic artifact verification.
+- **`src/inference/`**: Log signing and tamper verification algorithms.
+- **`src/api/`**: REST API and sqlite-backed event logging (`audit_events.sqlite`).
+- **`src/reporting/`**: Assembles HTML templates for forensic exports.
+- **`src/ui/`**: Static HTML/JS frontend polling the backend via REST.
 
-**Requirements:** Windows or Linux, Conda, Python 3.12.
+For detailed architecture, refer to `docs/ARCHITECTURE.md`.
 
-1. Clone or copy this repository.
-2. Activate the environment:
+## Requirements
+
+- Operating System: Windows or Linux
+- Python: 3.9+
+- Environment: Conda or virtualenv
+
+## Installation and Configuration
+
+1. Clone the repository and navigate into the root directory:
+   ```bash
+   git clone <REPOSITORY_URL>
+   cd TRUSTTRACE-CV
    ```
-   conda activate mldl
+
+2. Create and activate a local Python environment:
+   ```bash
+   conda create -n <PYTHON_ENVIRONMENT> python=3.10
+   conda activate <PYTHON_ENVIRONMENT>
    ```
-3. Install project dependencies (already present in mldl if set up per the brief):
-   ```
+
+3. Install dependencies:
+   ```bash
    pip install -r requirements.txt
    ```
-4. Generate synthetic test fixtures:
+
+4. Configure environment variables (copy the example template):
+   ```bash
+   cp .env.example .env
    ```
+
+5. Generate synthetic test fixtures (optional, for testing):
+   ```bash
    python scripts/generate_fixtures.py
    ```
-5. Start the web server:
-   ```
+
+6. Start the backend server:
+   ```bash
    python run_server.py
    ```
-6. Open a browser and navigate to `http://localhost:8000`.
 
-The system is fully offline after dependencies are installed.
+7. Open the local application:
+   Navigate to `http://localhost:8000` in your web browser.
 
-## CLI Usage
+## Dataset Preparation and Usage
 
+TRUSTTRACE CV supports standard COCO 2017 JSON schema and YOLO darknet text formats. 
+Datasets must be uploaded as ZIP archives containing the images and their corresponding annotations. 
+The system expects standard rectangular bounding boxes (`x_center, y_center, width, height` for YOLO).
+
+To run an audit:
+1. Upload the dataset archive via the web UI.
+2. The backend extracts the dataset to a temporary local directory.
+3. The live viewer will display images with accurately scaled bounding boxes.
+4. Download the forensic report upon completion.
+
+## Integrity Checks and Calculations
+
+- **SHA-256 Hashing:** Used to identify exact duplicate images within the dataset and to verify model weights against `<MODEL_MANIFEST>`.
+- **Entropy Scans:** Calculates Shannon entropy over a sliding 20x20 window on images. Patches with near-zero entropy (e.g., solid color squares) are flagged as potential triggers.
+- **OOD Detection:** Calculates the Mahalanobis distance of image pixel distributions relative to the dataset mean to flag statistical outliers.
+
+## Reports and Audit Evidence
+
+Audit findings are generated dynamically and logged sequentially to a local `audit_events.sqlite` database. 
+Upon completion of a dataset audit, the system produces a self-contained HTML forensic report. This report embeds original image bytes as `data:image/...;base64` URIs, ensuring offline accessibility and strict binding of evidence to the report structure.
+
+## Testing and Reproducibility
+
+The automated test suite uses `pytest` and relies on reproducible synthetic fixtures.
+
+To execute the test suite:
+```bash
+pytest tests/ -v
 ```
-# Inspect a YOLO dataset
-conda run -n mldl python -m src.cli audit-dataset --dataset-dir data/fixtures/clean
 
-# Inspect a model artifact
-conda run -n mldl python -m src.cli audit-model \
-  --model-path models/fixtures/dummy_detector.pt \
-  --manifest models/fixtures/manifest.json
+All 90 automated tests pass against the provided synthetic fixtures.
 
-# Verify an inference log
-conda run -n mldl python -m src.cli audit-inference \
-  --log-path data/fixtures/inference_logs/inference_log.jsonl
+## Security and Limitations
 
-# Full pipeline audit
-conda run -n mldl python -m src.cli audit-all \
-  --dataset-dir data/fixtures/clean \
-  --model-path models/fixtures/dummy_detector.pt \
-  --manifest models/fixtures/manifest.json \
-  --inference-log data/fixtures/inference_logs/inference_log.jsonl
-```
+- **Heuristic Anomalies:** Statistical anomalies (OOD, entropy) constitute evidence for human investigation. They do not cryptographically prove malicious poisoning.
+- **Model Safety:** Cryptographic hashes establish artifact identity to prevent supply-chain substitution. They do not evaluate the safety, fairness, or accuracy of the model's underlying weights.
+- **Local Data Handling:** All processing occurs locally. Ensure the host machine is appropriately secured.
+- **Secrets Management:** Ensure HMAC signing keys are protected in production deployments.
 
-## Running Tests
+## Troubleshooting
 
-```
-conda run -n mldl python -m pytest tests/ -v
-```
+- **Missing Bounding Boxes:** Ensure YOLO coordinates are properly normalized (0.0 to 1.0).
+- **Report Download Fails:** Wait for the `Finalization` stage of the audit to complete before exporting the HTML report.
 
-Test results as of prototype: **77/77 PASSED**.
+## Documentation Reference
 
-## Dataset and Model Provenance
-
-All datasets and models used in the prototype are entirely synthetic, generated deterministically by `scripts/generate_fixtures.py` using seed 42. No external datasets or model weights are downloaded.
-
-- Images: 100x100 RGB Gaussian-noise arrays, team-generated.
-- Labels: YOLO format, team-generated.
-- Model: 3-layer synthetic CNN, random weights, PyTorch, team-generated.
-- No external citations, DOIs, or licenses apply to the fixtures.
-
-Note: The ONNX export in the fixture generator currently fails on PyTorch 2.14 due to a breaking API change (`DiagnosticOptions` removal). This does not affect other checks. The `.onnx` file in the manifest was generated by a compatible version; the manifest integrity check will still work if the file is present.
-
-## Assumptions and Known Limitations
-
-- Statistical anomaly detection (Z-score, Mahalanobis, entropy) produces probabilistic signals; false positives and false negatives are expected.
-- SHA-256 matching confirms file identity, NOT model safety.
-- Trigger detection uses patch entropy as a heuristic and cannot detect sophisticated textured triggers.
-- HMAC signature verification requires the original signing key.
-- Replay detection can be evaded by modifying any non-critical record field.
-- Universal backdoor detection via static analysis is not mathematically feasible and is not claimed.
-- Near-duplicate image detection (perceptual hashing) is not implemented in this version.
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [SECURITY_AND_THREAT_MODEL.md](docs/SECURITY_AND_THREAT_MODEL.md)
+- [DATASET_TESTING.md](docs/DATASET_TESTING.md)
+- [API_REFERENCE.md](docs/API_REFERENCE.md)
+- [DEVELOPMENT.md](docs/DEVELOPMENT.md)
