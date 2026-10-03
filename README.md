@@ -14,13 +14,12 @@
     <img src="https://img.shields.io/badge/status-active%20development-brightgreen" alt="Status">
     <img src="https://img.shields.io/badge/version-v1.0%20%E2%80%94%20production%20ready-blue" alt="Version">
     <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="License">
-    <img src="https://img.shields.io/badge/PRs-welcome-blueviolet" alt="PRs Welcome">
   </p>
 
   <p>
     🚀 <a href="#quickstart-guide">Quickstart</a> &nbsp;•&nbsp; 
     🏗️ <a href="#system-architecture">Architecture</a> &nbsp;•&nbsp; 
-    🧪 <a href="#testing">Testing</a> &nbsp;•&nbsp; 
+    ⚖️ <a href="#how-it-compares">How It Compares</a> &nbsp;•&nbsp; 
     🧰 <a href="#technology-stack-and-frameworks">Tech Stack</a>
   </p>
 </div>
@@ -30,6 +29,29 @@
 ## 📖 Overview
 
 TRUSTTRACE CV is an offline-first, model-agnostic assurance pipeline designed specifically to secure the computer vision machine learning lifecycle. It delivers deterministic cryptographic verification and advanced statistical heuristics to protect training data, model artifacts, and inference records from tampering, poisoning, and supply-chain attacks.
+
+<br/>
+
+## ⚖️ How It Compares (Competitive Advantage)
+
+Most open-source ML tools focus heavily on either simple data formatting or post-deployment monitoring. **TRUSTTRACE CV** bridges the gap by strictly enforcing *cryptographic data provenance* and *advanced security heuristics* completely offline. 
+
+Here is how TRUSTTRACE CV objectively compares to existing industry standards based on current capabilities:
+
+| Capability | TRUSTTRACE CV | Deepchecks (Vision) | CleanVision | IBM ART |
+| :--- | :---: | :---: | :---: | :---: |
+| **Primary Focus** | **Integrity & Cryptographic Security** | Validation & Testing | Visual Data Quality | Adversarial Attacks |
+| **Cryptographic Provenance** | ✅ **Yes (HMAC-SHA256)** | ❌ No | ❌ No | ❌ No |
+| **Patch-Level Entropy Scans** | ✅ **Yes** | ❌ No | ❌ No | ✅ Yes (Indirectly) |
+| **Duplicate Flooding Detection** | ✅ **Yes (O(1) SHA-256)** | ⚠️ Partial (Heuristics) | ✅ Yes (Visual) | ❌ No |
+| **Label Flipping Detection** | ✅ **Yes (Z-Score Variance)** | ✅ Yes | ❌ No | ✅ Yes |
+| **OOD Detection** | ✅ **Yes (Mahalanobis Distance)** | ✅ Yes | ❌ No | ❌ No |
+| **Offline-First / Air-Gapped** | ✅ **Native** | ⚠️ Partial | ✅ Native | ✅ Native |
+
+* **Sources**: 
+  * [CleanVision](https://github.com/cleanlab/cleanvision) is exceptional for pre-training visual defect detection (blurriness, exposure) but lacks cryptographic pipeline security.
+  * [Deepchecks](https://docs.deepchecks.com/stable/vision/index.html) is an excellent CI/CD unit testing suite for ML pipelines, but it is not designed to enforce zero-trust cryptographic signatures on inference logs.
+  * [IBM Adversarial Robustness Toolbox (ART)](https://github.com/Trusted-AI/adversarial-robustness-toolbox) is the industry standard for adversarial attacks and defenses, but requires heavy computation and is not an end-to-end provenance pipeline. TRUSTTRACE CV can actually wrap ART using our `src/integrations/` adapter pattern.
 
 <br/>
 
