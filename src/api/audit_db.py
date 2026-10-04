@@ -1,14 +1,21 @@
 import sqlite3
 import json
+import os
 import time
 import hashlib
 from typing import Dict, Any, List
 from pathlib import Path
 
-DB_PATH = Path("audit_events.sqlite")
+def get_db_path() -> Path:
+    """Return the audit events DB path, configurable via TRUSTTRACE_AUDIT_DB env var."""
+    return Path(os.environ.get("TRUSTTRACE_AUDIT_DB", "audit_events.sqlite"))
+
+# Module-level alias for backwards compatibility (resolved at import time)
+DB_PATH = get_db_path()
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS audit_events (
@@ -40,7 +47,8 @@ def _canonicalize_event(event: Dict[str, Any]) -> bytes:
     return json.dumps(ordered, separators=(',', ':'), sort_keys=True).encode('utf-8')
 
 def get_last_hash(audit_id: str) -> str:
-    conn = sqlite3.connect(DB_PATH)
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('''
         SELECT event_hash FROM audit_events 
@@ -52,7 +60,8 @@ def get_last_hash(audit_id: str) -> str:
     return row[0] if row else "0000000000000000000000000000000000000000000000000000000000000000"
 
 def get_next_sequence(audit_id: str) -> int:
-    conn = sqlite3.connect(DB_PATH)
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('''
         SELECT MAX(sequence_number) FROM audit_events WHERE audit_id = ?
@@ -94,7 +103,8 @@ def log_event(audit_id: str, stage: str, operation: str, inputs: Dict[str, Any],
     event_hash = hashlib.sha256(combined).hexdigest()
     event["event_hash"] = event_hash
     
-    conn = sqlite3.connect(DB_PATH)
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO audit_events (
@@ -115,7 +125,8 @@ def log_event(audit_id: str, stage: str, operation: str, inputs: Dict[str, Any],
     return event
 
 def get_events(audit_id: str) -> List[Dict[str, Any]]:
-    conn = sqlite3.connect(DB_PATH)
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
