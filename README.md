@@ -44,7 +44,7 @@ Here is how TRUSTTRACE CV objectively compares to existing industry standards ba
 | **Cryptographic Provenance** | ✅ **Yes (HMAC-SHA256)** | ❌ No | ❌ No | ❌ No |
 | **Patch-Level Entropy Scans** | ✅ **Yes** | ❌ No | ❌ No | ✅ Yes (Indirectly) |
 | **Duplicate Flooding Detection** | ✅ **Yes (O(1) SHA-256)** | ⚠️ Partial (Heuristics) | ✅ Yes (Visual) | ❌ No |
-| **Label Flipping Detection** | ✅ **Yes (Z-Score Variance)** | ✅ Yes | ❌ No | ✅ Yes |
+| **Label Flipping Detection** | ✅ **Yes (Deterministic class_id diff vs reference)** | ✅ Yes | ❌ No | ✅ Yes |
 | **OOD Detection** | ✅ **Yes (Mahalanobis Distance)** | ✅ Yes | ❌ No | ❌ No |
 | **Offline-First / Air-Gapped** | ✅ **Native** | ⚠️ Partial | ✅ Native | ✅ Native |
 
@@ -100,7 +100,7 @@ graph TD
 
 1. **Dataset Duplicate Flooding**: Uses SHA-256 digests to instantly detect and flag duplicated assets.
 2. **Dataset Format Validation**: Strict structural validation of YOLO and COCO schema annotations.
-3. **Label Flipping Detection**: Detects statistical variance in class IDs to flag targeted poisoning.
+3. **Label Flipping Detection**: Deterministically compares class IDs annotation-by-annotation against a trusted reference annotation set to detect targeted poisoning. Z-score analysis is used separately for pixel distribution outlier detection (data poisoning).
 4. **Trigger Pattern Detection**: Advanced patch-level Shannon entropy scans to uncover solid/zero-entropy backdoor triggers.
 5. **Out-of-Distribution (OOD) Detection**: Flags statistical outliers across pixel distributions.
 6. **Model Identity Verification**: Validates PyTorch, TorchScript, and ONNX models against strict cryptographic reference manifests.
