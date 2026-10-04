@@ -53,10 +53,13 @@ def generate_offline_html_report(audit_id: str) -> str:
         for sec in report["sections"].values():
             findings.extend(sec.get("findings", []))
             
-    # Helper to encode images
-    def get_data_uri(img_path_str):
-        if not img_path_str: return ""
-        p = ROOT / img_path_str
+    # Helper to encode images - prefer relative url_path over absolute path
+    def get_data_uri(rec):
+        # Prefer relative url_path (set during audit), fall back to absolute path field
+        rel = rec.get("url_path") or rec.get("path", "")
+        if not rel: return ""
+        # If it looks absolute, try resolving via ROOT
+        p = Path(rel) if Path(rel).is_absolute() else ROOT / rel
         if not p.exists(): return ""
         ext = p.suffix.lower()[1:]
         if ext == 'jpg': ext = 'jpeg'
@@ -64,7 +67,7 @@ def generate_offline_html_report(audit_id: str) -> str:
             with open(p, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode('utf-8')
             return f"data:image/{ext};base64,{b64}"
-        except:
+        except Exception:
             return ""
 
     html = []
@@ -117,7 +120,7 @@ def generate_offline_html_report(audit_id: str) -> str:
         html.append(f"<div class='flex-row'>")
         
         # Left Column: Image with BBoxes
-        data_uri = get_data_uri(rec.get("path"))
+        data_uri = get_data_uri(rec)
         html.append(f"<div class='col-half'>")
         if data_uri:
             html.append(f"<div class='img-container'>")
