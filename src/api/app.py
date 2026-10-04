@@ -466,6 +466,9 @@ def audit_full(req: FullAuditRequest):
     all_inf_findings: list = []
     ds_summary: dict = {}
     mdl_summary: dict = {}
+    # Initialize to safe defaults to prevent NameError if conditional blocks are skipped
+    ds_result: dict = {"records": []}
+    records_inf: list = []
 
     if req.dataset_path:
         base = ROOT / req.dataset_path
