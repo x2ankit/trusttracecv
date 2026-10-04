@@ -162,3 +162,50 @@ def test_html_report_generation():
     assert "<!DOCTYPE html>" in content
     assert "data:image/jpeg;base64," in content or "data:image/jpg;base64," in content or "data:image/png;base64," in content
     assert audit_id in content
+def test_full_audit_dataset_only_no_nameerror():
+    """Regression test for DEFECT-3: audit_full used ds_result/records_inf before
+    guaranteed init when only dataset_path was provided without inference_log."""
+    req = {
+        "dataset_path": "data/fixtures/clean",
+        # No model_path, no inference_log
+    }
+    resp = client.post("/api/audit/full", json=req)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "verdict" in data
+    assert "dataset_records" in data
+    assert "inference_records" in data
+    assert data["inference_records"] == []
+
+def test_full_audit_model_only_no_nameerror():
+    """Regression test for DEFECT-3: audit_full with only model_path
+    should not raise NameError on ds_result."""
+    req = {
+        "model_path": "models/fixtures/dummy_detector.pt",
+        "manifest_path": "models/fixtures/manifest.json",
+        # No dataset_path, no inference_log
+    }
+    resp = client.post("/api/audit/full", json=req)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "verdict" in data
+    assert "dataset_records" in data
+    assert data["dataset_records"] == []
+
+def test_audit_db_env_configurable(tmp_path):
+    """Regression test for DEFECT-1: audit_db should use env var TRUSTTRACE_AUDIT_DB."""
+    import os
+    from src.api.audit_db import get_db_path, log_event, get_events
+    
+    custom_db = str(tmp_path / "custom_audit.sqlite")
+    os.environ["TRUSTTRACE_AUDIT_DB"] = custom_db
+    try:
+        log_event("test_audit_db_env", "Test", "EnvConfig", {}, "test()", {}, "OK", "", "PASS", "", 0, "PASS")
+        events = get_events("test_audit_db_env")
+        assert len(events) == 1
+        assert events[0]["check_name"] == "Test"
+        # Verify the custom DB file was created
+        from pathlib import Path
+        assert Path(custom_db).exists()
+    finally:
+        del os.environ["TRUSTTRACE_AUDIT_DB"]
